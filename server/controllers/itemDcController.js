@@ -1,8 +1,9 @@
 const itemAddModel = require("../models/itemAddModel");
 const itemDcModel = require("../models/itemDcModel")
 const dayjs = require('dayjs')
-const PDFDocument = require('pdfkit');
+const puppeteer = require('puppeteer');
 const fs = require('fs');
+const path = require('path');
 
 const itemDcController = {
   getAllItemDc: async (req, res) => {
@@ -45,47 +46,65 @@ const itemDcController = {
 
       const result = await itemDcResult.save();
 
-      const pdfDoc = new PDFDocument();
-      const writeStream = fs.createWriteStream('example.pdf');
-      pdfDoc.pipe(writeStream);
-      pdfDoc.fontSize(20).text('DC Data', { align: 'center' });
-      pdfDoc.text(`Party Name: ${result.dcPartyName}`);
-      pdfDoc.text(`DC No: ${result.dcNo}`);
-      pdfDoc.text(`DC Date: ${result.dcDate}`);
-      pdfDoc.end();
-      console.log('PDF created successfully');
+
 
       if (Object.keys(result).length !== 0) {
         console.log("success");
-        
+
         // Update promises
         const updatePromises = dcPartyItems.map(async (item) => {
-            const itemData = await itemAddModel.findById(item._id);
-            const { itemIMTENo, itemCurrentLocation: itemLastLocation } = itemData;
-            const updateItemFields = {
-                itemIMTENo,
-                itemCurrentLocation: dcPartyName,
-                itemLastLocation,
-                itemLocation: dcPartyType,
-                dcId: result._id,
-                dcStatus: "1",
-                dcCreatedOn: dcDate,
-                dcNo: dcNo
-            };
-            const updateResult = await itemAddModel.findOneAndUpdate(
-                { _id: item._id },
-                { $set: updateItemFields },
-                { new: true }
-            );
-            console.log("itemUpdated");
-            return updateResult;
+          const itemData = await itemAddModel.findById(item._id);
+          const { itemIMTENo, itemCurrentLocation: itemLastLocation } = itemData;
+          const updateItemFields = {
+            itemIMTENo,
+            itemCurrentLocation: dcPartyName,
+            itemLastLocation,
+            itemLocation: dcPartyType,
+            dcId: result._id,
+            dcStatus: "1",
+            dcCreatedOn: dcDate,
+            dcNo: dcNo
+          };
+          const updateResult = await itemAddModel.findOneAndUpdate(
+            { _id: item._id },
+            { $set: updateItemFields },
+            { new: true }
+          );
+          console.log("itemUpdated");
+          return updateResult;
         });
 
         const updatedItems = await Promise.all(updatePromises);
 
+
+
+
         // PDF generation logic
-       
-    }
+
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+
+        // Read the HTML template file
+        const filePath = path.resolve('D:\\Documents\\CalsoftDemo\\Calsoft\\server\\controllers\\dc-table.html');
+        const htmlTemplate = fs.readFileSync(filePath, 'utf8');
+
+        // Replace placeholders with actual data
+        const modifiedHTML = htmlTemplate
+          .replace('{{name}}', dcPartyName)
+          .replace('{{email}}', dcPartyId);
+        // Add more replace statements for additional placeholders as needed
+
+        // Set the modified HTML content
+        await page.setContent(modifiedHTML, { waitUntil: 'networkidle0' });
+
+        // Generate PDF
+        await page.pdf({ path: './demo.pdf', format: 'A4' });
+
+        await browser.close();
+
+        console.log('PDF created successfully');
+
+      }
 
 
 

@@ -27,7 +27,9 @@ import { useEmployee } from '../../../App';
 import DcPrint from './DcPrint';
 import { useReactToPrint } from 'react-to-print';
 import html2pdf from 'html2pdf.js';
+
 export const DcListContent = createContext(null);
+
 const DcList = () => {
 
     const empRole = useEmployee()
@@ -294,7 +296,7 @@ const DcList = () => {
         { field: 'dcNo', headerName: 'Dc No', headerAlign: "center", align: "center", width: 100 },
         { field: 'dcDate', headerName: 'Dc Date', headerAlign: "center", align: "center", width: 200 },
         { field: 'dcPartyName', headerName: 'Dc PartyName', headerAlign: "center", align: "center", width: 300 },
-        { field: 'printButton', headerName: 'Print', headerAlign: "center", align: "center", width: 100, renderCell: (params) => <Button onClick={(e) => handlePrint(params.row)}><PrintRounded color='success' /></Button> }
+        { field: 'printButton', headerName: 'Print', headerAlign: "center", align: "center", width: 100, renderCell: (params) => <Button ><PrintRounded color='success' /></Button> }
     ]
 
 
@@ -521,12 +523,9 @@ const DcList = () => {
     };
 
     
-    const handlePrint = (data) => {
-        setSelectedRows(data)
-        setPrintModel(true)
-    }
+    
 
-
+    
    
 
 

@@ -30,6 +30,8 @@ const formatNoRoute = require("./routes/formatNoRoute");
 const employeeController = require("./controllers/employeeController");
 const mailRoute = require("./routes/mailRoute");
 const itemHistoryRoute = require("./routes/itemHistoryRoute")
+const fs = require('fs');
+
 
 db.connectDatabase();
 //
@@ -75,6 +77,11 @@ app.use('/mail', mailRoute)
  
 //
 app.post('/login', employeeController.employeeLoginCheck)
+
+
+
+
+
 const port = 3003;
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
