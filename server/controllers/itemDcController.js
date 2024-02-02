@@ -1,6 +1,8 @@
 const itemAddModel = require("../models/itemAddModel");
 const itemDcModel = require("../models/itemDcModel")
 const dayjs = require('dayjs')
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
 
 const itemDcController = {
   getAllItemDc: async (req, res) => {
@@ -43,34 +45,47 @@ const itemDcController = {
 
       const result = await itemDcResult.save();
 
+      const pdfDoc = new PDFDocument();
+      const writeStream = fs.createWriteStream('example.pdf');
+      pdfDoc.pipe(writeStream);
+      pdfDoc.fontSize(20).text('DC Data', { align: 'center' });
+      pdfDoc.text(`Party Name: ${result.dcPartyName}`);
+      pdfDoc.text(`DC No: ${result.dcNo}`);
+      pdfDoc.text(`DC Date: ${result.dcDate}`);
+      pdfDoc.end();
+      console.log('PDF created successfully');
+
       if (Object.keys(result).length !== 0) {
-        console.log(dcPartyType)
+        console.log("success");
+        
+        // Update promises
         const updatePromises = dcPartyItems.map(async (item) => {
-
-          const itemData = await itemAddModel.findById(item._id)
-          const { itemIMTENo, itemCurrentLocation: itemLastLocation } = itemData
-          const updateItemFields = {
-            itemIMTENo,
-            itemCurrentLocation: dcPartyName,
-            itemLastLocation,
-
-            
-            itemLocation: dcPartyType,
-            dcId: result._id,
-            dcStatus: "1",
-            dcCreatedOn: dcDate,
-            dcNo: dcNo
-          }
-          const updateResult = await itemAddModel.findOneAndUpdate(
-            { _id: item._id },
-            { $set: updateItemFields },
-            { new: true }
-          );
-          console.log("itemUpdated")
-          return updateResult;
+            const itemData = await itemAddModel.findById(item._id);
+            const { itemIMTENo, itemCurrentLocation: itemLastLocation } = itemData;
+            const updateItemFields = {
+                itemIMTENo,
+                itemCurrentLocation: dcPartyName,
+                itemLastLocation,
+                itemLocation: dcPartyType,
+                dcId: result._id,
+                dcStatus: "1",
+                dcCreatedOn: dcDate,
+                dcNo: dcNo
+            };
+            const updateResult = await itemAddModel.findOneAndUpdate(
+                { _id: item._id },
+                { $set: updateItemFields },
+                { new: true }
+            );
+            console.log("itemUpdated");
+            return updateResult;
         });
+
         const updatedItems = await Promise.all(updatePromises);
-      }
+
+        // PDF generation logic
+       
+    }
 
 
 
@@ -110,14 +125,15 @@ const itemDcController = {
 
         const itemData = await itemAddModel.findById(item._id)
         const { itemIMTENo, itemLastLocation } = itemData
-        const updateItemFields = { 
-          itemIMTENo, 
-          itemCurrentLocation: itemLastLocation, 
-          itemLocation: "department", 
-          dcId: "", 
-          dcStatus: "0", 
-          dcCreatedOn: "", 
-          dcNo: "" }
+        const updateItemFields = {
+          itemIMTENo,
+          itemCurrentLocation: itemLastLocation,
+          itemLocation: "department",
+          dcId: "",
+          dcStatus: "0",
+          dcCreatedOn: "",
+          dcNo: ""
+        }
         const updateResult = await itemAddModel.findOneAndUpdate(
           { _id: item._id },
           { $set: updateItemFields },
@@ -160,16 +176,16 @@ const itemDcController = {
         const updatePromises = dcPartyItems.map(async (item) => {
 
           const itemData = await itemAddModel.findById(item._id)
-          const { itemIMTENo, itemCurrentLocation : itemLastLocation } = itemData
-          const updateItemFields = { 
-            itemIMTENo, 
-            itemCurrentLocation: dcPartyName, 
+          const { itemIMTENo, itemCurrentLocation: itemLastLocation } = itemData
+          const updateItemFields = {
+            itemIMTENo,
+            itemCurrentLocation: dcPartyName,
             itemLastLocation,
-            itemLocation: dcPartyType, 
-            dcId: updateItemDc._id, 
-            dcStatus: "1", 
-            dcCreatedOn: dcDate, 
-            dcNo: dcNo 
+            itemLocation: dcPartyType,
+            dcId: updateItemDc._id,
+            dcStatus: "1",
+            dcCreatedOn: dcDate,
+            dcNo: dcNo
           }
           const updateResult = await itemAddModel.findOneAndUpdate(
             { _id: item._id },

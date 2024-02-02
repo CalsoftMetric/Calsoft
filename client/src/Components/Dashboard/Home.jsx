@@ -125,7 +125,9 @@ const Home = () => {
 
       );
       const plantDc = response.data.result.filter(dc => (employeeRole.loggedEmp.plantDetails.map(plant => plant.plantName).includes(dc.dcPlant)))
-      const dcNos = response.data.result.map(dc => dc.dcId).filter(Boolean).sort()
+      const dcNos = response.data.result.map(dc => dc.dcId).filter(Boolean)
+      const sortedDc = dcNos.sort((a, b) => a - b);
+      console.log(sortedDc)
       if(dcNos.length === 0){
         setLastNo("DC "+ (dayjs().year() + "-" + 1))
       }else{
