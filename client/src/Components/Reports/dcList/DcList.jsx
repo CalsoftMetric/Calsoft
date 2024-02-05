@@ -296,7 +296,7 @@ const DcList = () => {
         { field: 'dcNo', headerName: 'Dc No', headerAlign: "center", align: "center", width: 100 },
         { field: 'dcDate', headerName: 'Dc Date', headerAlign: "center", align: "center", width: 200 },
         { field: 'dcPartyName', headerName: 'Dc PartyName', headerAlign: "center", align: "center", width: 300 },
-        { field: 'printButton', headerName: 'Print', headerAlign: "center", align: "center", width: 100, renderCell: (params) => <Button ><PrintRounded color='success' /></Button> }
+        { field: 'printButton', headerName: 'Print', headerAlign: "center", align: "center", width: 100, renderCell: (params) => <Button component={Link} to={`${process.env.REACT_APP_PORT}/dcCertificate/${params.row.dcNo}.pdf`} target='_blank'><PrintRounded color='success' /></Button> }
     ]
 
 

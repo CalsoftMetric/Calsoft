@@ -1,6 +1,12 @@
 const itemGRNModel = require("../models/itemGRNModel")
 const itemAddModel = require('../models/itemAddModel');
 const itemHistory = require("../models/itemHistory");
+const { compDetailsSchema } = require("../models/compDetailsModel");
+const { plantSchema } = require("../models/compDetailsModel");
+const formatNoModel = require("../models/formatNoModel");
+const puppeteer = require('puppeteer');
+const fs = require('fs');
+const path = require('path');
 const mongoose = require('mongoose');
 
 
@@ -109,196 +115,263 @@ const itemGRNController = {
         grnUncertainity,
         grnItemCalStatus,
       });
-      const validationError = itemGRNResult.validateSync();
 
-      if (validationError) {
-        // Handle validation errors
-        const validationErrors = {};
+      const getCompDetailsById = await compDetailsSchema.findOne(
+        { compId: 1 } // To return the updated document
+      );
+      const getPlantAddress = await plantSchema.findOne(
+        { plantName: grnPlant } // To return the updated document
+      );
 
-        if (validationError.errors) {
-          // Convert Mongoose validation error details to a more user-friendly format
-          for (const key in validationError.errors) {
-            validationErrors[key] = validationError.errors[key].message;
-          }
-        }
+      const formatNo = await formatNoModel.findOne({ formatId: 1 });
 
-        return res.status(400).json({
-          errors: validationErrors
-        });
-      }
-      console.log("success")
+      const formatNumber = `${formatNo.fGrn ? (formatNo.fGrn.frNo + " " + formatNo.fGrn.amNo + " " + formatNo.fGrn.amDate) : ""}`
+      console.log(formatNumber)
 
-      const result = await itemGRNResult.save();
+      // const validationError = itemGRNResult.validateSync();
 
-      if (Object.keys(result).length !== 0) {
+      // if (validationError) {
+      //   // Handle validation errors
+      //   const validationErrors = {};
 
-        let itemCondition = ""
-        if(grnItemCalStatus === "rejected"){
-          itemCondition = "rejection"
-        }else{
-          itemCondition = "active"
-        }
+      //   if (validationError.errors) {
+      //     // Convert Mongoose validation error details to a more user-friendly format
+      //     for (const key in validationError.errors) {
+      //       validationErrors[key] = validationError.errors[key].message;
+      //     }
+      //   }
 
-        const itemData = await itemAddModel.findById(grnItemId)
-        const {
-          _id,
-          itemIMTENo,
-          itemCurrentLocation: itemLastLocation,
-          itemLocation: itemLastPlace,
-          itemDepartment,
-          itemCalDate: itemLastCalDate,
-          itemDueDate: itemLastDueDate,
-          dcStatus: lastDcStatus,
-          dcNo: lastDcNo,
-          dcId: lastDcId,
-          dcCreatedOn: lastDcCreatedOn,
-          itemPlant,
-          itemAddMasterName,
-          itemType,
-          itemRangeSize,
-          itemRangeSizeUnit,
-          itemLC,
-          itemLCUnit,
-          itemModelNo,
-          itemStatus,
-          itemReceiptDate,
-          itemCalFreInMonths,
-          itemCalAlertDays,
-          itemCalibrationSource,
-          itemCalibrationDoneAt,
-          itemCalibratedAt,
+      //   return res.status(400).json({
+      //     errors: validationErrors
+      //   });
+      // }
+      // console.log("success")
+
+      // const result = await itemGRNResult.save();
+
+      // if (Object.keys(result).length !== 0) {
+
+      //   let itemCondition = ""
+      //   if(grnItemCalStatus === "rejected"){
+      //     itemCondition = "rejection"
+      //   }else{
+      //     itemCondition = "active"
+      //   }
+
+      //   const itemData = await itemAddModel.findById(grnItemId)
+      //   const {
+      //     _id,
+      //     itemIMTENo,
+      //     itemCurrentLocation: itemLastLocation,
+      //     itemLocation: itemLastPlace,
+      //     itemDepartment,
+      //     itemCalDate: itemLastCalDate,
+      //     itemDueDate: itemLastDueDate,
+      //     dcStatus: lastDcStatus,
+      //     dcNo: lastDcNo,
+      //     dcId: lastDcId,
+      //     dcCreatedOn: lastDcCreatedOn,
+      //     itemPlant,
+      //     itemAddMasterName,
+      //     itemType,
+      //     itemRangeSize,
+      //     itemRangeSizeUnit,
+      //     itemLC,
+      //     itemLCUnit,
+      //     itemModelNo,
+      //     itemStatus,
+      //     itemReceiptDate,
+      //     itemCalFreInMonths,
+      //     itemCalAlertDays,
+      //     itemCalibrationSource,
+      //     itemCalibrationDoneAt,
+      //     itemCalibratedAt,
           
           
-          itemOBType,
-          itemUncertainity,
-          itemUncertainityUnit,
-          itemPrevCalData,
-          itemCertificateNo : itemLastCertificateNo,
+      //     itemOBType,
+      //     itemUncertainity,
+      //     itemUncertainityUnit,
+      //     itemPrevCalData,
+      //     itemCertificateNo : itemLastCertificateNo,
 
 
-        } = itemData
+      //   } = itemData
 
 
-        const updateItemFields = {
-          itemIMTENo,
-          itemLastPlace,
-          itemCurrentLocation: itemDepartment,
-          itemLastLocation,
-          itemLocation: "department",
-          itemLastCalDate,
-          itemLastDueDate,
-          itemStatus: itemCondition,
-          itemLastStatus: itemStatus,
-          itemCalDate: grnItemCalDate,
-          itemDueDate: grnItemDueDate,
-          grnId: result._id,
-          grnStatus: "1",
-          grnCreatedOn: grnDate,
-          grnNo: grnNo,
-          lastDcId,
-          lastDcStatus,
-          lastDcCreatedOn,
-          lastDcNo,
-          dcStatus: "0",
-          dcNo: "",
-          dcId: "",
-          dcCreatedOn: "",
-          itemCertificateNo: grnItemCertificateNo,
-          itemLastCertificateNo,
+      //   const updateItemFields = {
+      //     itemIMTENo,
+      //     itemLastPlace,
+      //     itemCurrentLocation: itemDepartment,
+      //     itemLastLocation,
+      //     itemLocation: "department",
+      //     itemLastCalDate,
+      //     itemLastDueDate,
+      //     itemStatus: itemCondition,
+      //     itemLastStatus: itemStatus,
+      //     itemCalDate: grnItemCalDate,
+      //     itemDueDate: grnItemDueDate,
+      //     grnId: result._id,
+      //     grnStatus: "1",
+      //     grnCreatedOn: grnDate,
+      //     grnNo: grnNo,
+      //     lastDcId,
+      //     lastDcStatus,
+      //     lastDcCreatedOn,
+      //     lastDcNo,
+      //     dcStatus: "0",
+      //     dcNo: "",
+      //     dcId: "",
+      //     dcCreatedOn: "",
+      //     itemCertificateNo: grnItemCertificateNo,
+      //     itemLastCertificateNo,
 
-        }
-        const updateResult = await itemAddModel.findOneAndUpdate(
-          { _id: grnItemId },
-          { $set: updateItemFields },
-          { new: true }
-        );
+      //   }
+      //   const updateResult = await itemAddModel.findOneAndUpdate(
+      //     { _id: grnItemId },
+      //     { $set: updateItemFields },
+      //     { new: true }
+      //   );
 
-        console.log(grnAcCriteria)
-        let obSize = [];
+      //   console.log(grnAcCriteria)
+      //   let obSize = [];
 
-        if (grnAcCriteria.length > 0) {
+      //   if (grnAcCriteria.length > 0) {
 
-          console.log(grnItemType)
-          if (grnItemType === "variable") {
-            obSize = grnAcCriteria.map(item => {
-              return item.grnParameter + ":" + item.grnOBError
-            })
-          } else {
-            obSize = grnAcCriteria.map(item => {
+      //     console.log(grnItemType)
+      //     if (grnItemType === "variable") {
+      //       obSize = grnAcCriteria.map(item => {
+      //         return item.grnParameter + ":" + item.grnOBError
+      //       })
+      //     } else {
+      //       obSize = grnAcCriteria.map(item => {
 
-              if (grnItemOBType === "minmax") {
-                return item.grnParameter + " : " + item.grnMinOB + "/" + item.grnMaxOB
-              } else {
-                return item.grnParameter + " : " + item.grnAverageOB
-              }
+      //         if (grnItemOBType === "minmax") {
+      //           return item.grnParameter + " : " + item.grnMinOB + "/" + item.grnMaxOB
+      //         } else {
+      //           return item.grnParameter + " : " + item.grnAverageOB
+      //         }
 
-            })
-          }
-        }
-
-
+      //       })
+      //     }
+      //   }
 
 
-        const historyRecord = new itemHistory({
-          itemIMTENo,
-          itemGrnId: result._id,
-          itemCurrentLocation: itemDepartment,
-          itemLastLocation,
-          itemLocation: "department",
-          itemLastCalDate,
-          itemLastDueDate,
-          itemCalDate: grnItemCalDate,
-          itemDueDate: grnItemDueDate,
-          grnId: result._id,
-          grnStatus: "1",
-          grnCreatedOn: grnDate,
-          grnNo: grnNo,
-          lastDcId,
-          lastDcStatus,
-          lastDcCreatedOn,
-          lastDcNo,
-          dcStatus: "0",
-          dcNo: "",
-          dcId: "",
-          dcCreatedOn: "",
-          itemId: _id,
-          itemCalId: "",
-          itemAddMasterName,
-          itemPlant,
-          itemType,
-          itemRangeSize,
-          itemRangeSizeUnit,
-          itemLC,
-          itemLCUnit,
-          itemModelNo,
-          itemStatus : itemCondition,
-          itemLastStatus: itemStatus,
-          itemReceiptDate,
-          itemDepartment,
-          itemCalFreInMonths,
-          itemCalAlertDays,
-          itemCalibrationSource,
-          itemCalStatus: grnItemCalStatus,
-          itemCalibrationDoneAt,
-          itemUncertainityUnit,
-          itemPrevCalData,
-          itemCalibratedAt,
-          itemCertificateName: grnItemCertificate,
-          itemOBType,
-          itemUncertainity,
-          itemLastCertificateNo,
-          itemCertificateNo: grnItemCertificateNo,
-          acceptanceCriteria: obSize
-        });
-        const itemHistoryData = await historyRecord.save();
 
-        console.log(itemHistoryData, "Historysaved")
-      }
+
+      //   const historyRecord = new itemHistory({
+      //     itemIMTENo,
+      //     itemGrnId: result._id,
+      //     itemCurrentLocation: itemDepartment,
+      //     itemLastLocation,
+      //     itemLocation: "department",
+      //     itemLastCalDate,
+      //     itemLastDueDate,
+      //     itemCalDate: grnItemCalDate,
+      //     itemDueDate: grnItemDueDate,
+      //     grnId: result._id,
+      //     grnStatus: "1",
+      //     grnCreatedOn: grnDate,
+      //     grnNo: grnNo,
+      //     lastDcId,
+      //     lastDcStatus,
+      //     lastDcCreatedOn,
+      //     lastDcNo,
+      //     dcStatus: "0",
+      //     dcNo: "",
+      //     dcId: "",
+      //     dcCreatedOn: "",
+      //     itemId: _id,
+      //     itemCalId: "",
+      //     itemAddMasterName,
+      //     itemPlant,
+      //     itemType,
+      //     itemRangeSize,
+      //     itemRangeSizeUnit,
+      //     itemLC,
+      //     itemLCUnit,
+      //     itemModelNo,
+      //     itemStatus : itemCondition,
+      //     itemLastStatus: itemStatus,
+      //     itemReceiptDate,
+      //     itemDepartment,
+      //     itemCalFreInMonths,
+      //     itemCalAlertDays,
+      //     itemCalibrationSource,
+      //     itemCalStatus: grnItemCalStatus,
+      //     itemCalibrationDoneAt,
+      //     itemUncertainityUnit,
+      //     itemPrevCalData,
+      //     itemCalibratedAt,
+      //     itemCertificateName: grnItemCertificate,
+      //     itemOBType,
+      //     itemUncertainity,
+      //     itemLastCertificateNo,
+      //     itemCertificateNo: grnItemCertificateNo,
+      //     acceptanceCriteria: obSize
+      //   });
+      //   const itemHistoryData = await historyRecord.save();
+
+      //   console.log(itemHistoryData, "Historysaved")
+      // }
+
+      
+ 
+        let tableRow = `
+            <tr>
+                <td style="padding: 0.50rem; vertical-align: top; border: 1px solid #6c757d ;" class="text-center align-middle">1</td>
+                <td style="padding: 0.50rem; vertical-align: top; border: 1px solid #6c757d ;" class="align-middle">Item Name: ${grnItemAddMasterName ? grnItemAddMasterName : "-"} IMTE No: ${grnItemIMTENo ? grnItemIMTENo : "-"}<br>
+                Range/Size: ${grnItemRangeSize ? grnItemRangeSize : "" + ' ' + grnItemRangeSizeUnit ? grnItemRangeSizeUnit : ""} L.C.: ${(grnItemLC ? grnItemLC : "") + '' + (grnItemLCUnit ? grnItemLCUnit : '')}<br>
+                Make: ${grnItemMake ? grnItemMake : "-"} Sr.No: ${grnItemMFRNo ? grnItemMFRNo : "-"} Cal. Frequency: ${grnItemCalFreInMonths ? grnItemCalFreInMonths : "-"} months</td>
+                <td style="padding: 0.50rem; vertical-align: top; border: 1px solid #6c757d ;" class="text-center align-middle">${grnCommonRemarks}</td>
+            </tr>
+        `;
+
+
+
+      // Example usage:
+
+      const browser = await puppeteer.launch();
+      const page = await browser.newPage();
+
+      // Read the HTML template file
+      const filePath = path.resolve(__dirname, '../../server/templates/grnTemplate.html');
+      const htmlTemplate = fs.readFileSync(filePath, 'utf8');
+
+      // Replace placeholders with actual data
+      const modifiedHTML = htmlTemplate
+       
+        .replace('{{dcPartyItems}}', tableRow)
+        .replace('{{Company Name}}', getCompDetailsById.companyName)
+        .replace('{{-Company Name-}}', getCompDetailsById.companyName)
+        .replace('{{Plant}}', getPlantAddress.plantName)
+        .replace('{{PlantAddress}}', getPlantAddress.plantAddress)
+        .replace('{{dcPartyName}}', grnPartyName)
+        .replace('{{dcPartyAddress}}', grnPartyAddress)
+        .replace('{{dcNo}}', grnNo)
+        .replace('{{dcDate}}', grnDate)
+        .replace('{{dcCR}}', grnCommonRemarks)
+        .replace('{{logo}}', process.env.SERVER_PORT + '/logo/' + getCompDetailsById.companyLogo)
+        .replace('{{formatNo}}', formatNumber)
+
+
+      // Add more replace statements for additional placeholders as needed
+
+      // Set the modified HTML content
+
+      console.log(modifiedHTML)
+      await page.setContent(modifiedHTML, { waitUntil: 'networkidle0' });
+
+      // Generate PDF
+      await page.pdf({ path: `./storage/grnCertificates/${grnNo}.pdf`, format: 'A4' });
+
+      await browser.close();
+
+      console.log('PDF created successfully');
 
       return res.status(200).json({ message: "Item GRN Data Successfully Saved", status: 1 });
     } catch (error) {
 
-      session.endSession();
+
       console.log(error)
 
       if (error.errors) {

@@ -129,9 +129,9 @@ const Home = () => {
       const sortedDc = dcNos.sort((a, b) => a - b);
       console.log(sortedDc)
       if(dcNos.length === 0){
-        setLastNo("DC "+ (dayjs().year() + "-" + 1))
+        setLastNo("DC-"+ (dayjs().year() + "-" + 1))
       }else{
-        setLastNo("DC "+ (dayjs().year() + "-" + ((dcNos[dcNos.length - 1]) + 1)))
+        setLastNo("DC-"+ (dayjs().year() + "-" + ((dcNos[dcNos.length - 1]) + 1)))
       }
       
       console.log(dcNos[dcNos.length - 1])
@@ -146,6 +146,34 @@ const Home = () => {
   useEffect(() => {
     dcListFetchData();
   }, []);
+
+  const [lastGrnNo, setLastGrnNo] = useState("")
+  const [grnList, setGrnList] = useState({})
+  const grnFetchData = async () => {
+      try {
+          const response = await axios.get(
+              `${process.env.REACT_APP_PORT}/itemGRN/getAllItemGRN`
+          );
+          setGrnList(response.data.result);
+          const grnNumbers = response.data.result.map(item => (item.grnId)).filter(Boolean).sort();
+          if (grnNumbers.length > 0) {
+              const lastNumber = grnNumbers[grnNumbers.length - 1] + 1
+              console.log(lastNumber)
+
+              setLastGrnNo("GRN-" + dayjs().year() + "-" + lastNumber)
+          } else {
+              setLastGrnNo("GRN-" + dayjs().year() + "-" + 1 )
+          }
+
+
+      } catch (err) {
+          console.log(err);
+      }
+  };
+  useEffect(() => {
+      grnFetchData();
+  }, []);
+
 
 
   const [calLastNo, setCalLastNo] = useState("")
@@ -1831,7 +1859,7 @@ const Home = () => {
                   <Dc />
                 </HomeContent.Provider>
                 <HomeContent.Provider
-                  value={{ grnOpen, setGrnOpen, selectedRows }}
+                  value={{ grnOpen, setGrnOpen, selectedRows, lastGrnNo }}
                 >
                   <Grn />
                 </HomeContent.Provider>
