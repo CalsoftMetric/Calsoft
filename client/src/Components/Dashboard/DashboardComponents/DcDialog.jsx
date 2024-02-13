@@ -13,7 +13,7 @@ import { Add, Close, Delete } from '@mui/icons-material';
 const Dc = () => {
 
     const dcDatas = useContext(HomeContent)
-    const { dcOpen, setDcOpen, selectedRows, itemFetch, defaultDep, lastNo } = dcDatas
+    const { dcOpen, setDcOpen, selectedRows, itemFetch, defaultDep, lastNo, vendors } = dcDatas
 
 
     console.log(selectedRows)
@@ -72,7 +72,8 @@ const Dc = () => {
                     dcDepartment: departments,
                     dcPartyItems: selectedRows.map(item => ({
                         ...item,
-                        dcItemRemarks: ""
+                        dcItemRemarks: "",
+                       
                     })),
                     dcNo: lastNo
                 }
@@ -91,22 +92,22 @@ const Dc = () => {
         const { name, value } = e.target;
 
         if (value === "all") {
-            setFilteredData(vendorDataList)
+            setFilteredData(vendors)
         } else {
             if (value === "oem") {
-                const vendorType = vendorDataList.filter((item) => (item.oem === "1"))
+                const vendorType = vendors.filter((item) => (item.oem === "1"))
                 setFilteredData(vendorType)
             }
             if (value === "customer") {
-                const vendorType = vendorDataList.filter((item) => (item.customer === "1"))
+                const vendorType = vendors.filter((item) => (item.customer === "1"))
                 setFilteredData(vendorType)
             }
             if (value === "supplier") {
-                const vendorType = vendorDataList.filter((item) => (item.supplier === "1"))
+                const vendorType = vendors.filter((item) => (item.supplier === "1"))
                 setFilteredData(vendorType)
             }
             if (value === "subContractor") {
-                const vendorType = vendorDataList.filter((item) => (item.subContractor === "1"))
+                const vendorType = vendors.filter((item) => (item.subContractor === "1"))
                 setFilteredData(vendorType)
             }
 
@@ -169,38 +170,8 @@ const Dc = () => {
 
     // const [dcPartyItem, setDcPartyItem] = useState([])
 
-    const [vendorDataList, setVendorDataList] = useState([])
 
-    const vendorFetchData = async () => {
-        try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/vendor/getAllVendors`
-            );
-            setVendorDataList(response.data.result);
 
-        } catch (err) {
-            console.log(err);
-        }
-    };
-    useEffect(() => {
-        vendorFetchData();
-    }, []);
-    const [itemList, setItemList] = useState([])
-
-    const ItemFetchData = async () => {
-        try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/vendor/getAllVendors`
-            );
-            setVendorDataList(response.data.result);
-
-        } catch (err) {
-            console.log(err);
-        }
-    };
-    useEffect(() => {
-        ItemFetchData();
-    }, []);
 
 
 
@@ -690,9 +661,11 @@ const Dc = () => {
                                                 fullWidth
                                                 name="dcReason" >
                                                 <MenuItem value="">Select</MenuItem>
+                                                <MenuItem value="Nil">Nil</MenuItem>
                                                 <MenuItem value="Service">Service</MenuItem>
                                                 <MenuItem value="ServiceCalibration">Service & Calibration</MenuItem>
                                                 <MenuItem value="Calibration">Calibration</MenuItem>
+                                                <MenuItem value="others">Others</MenuItem>
 
                                             </TextField>
 
@@ -717,7 +690,7 @@ const Dc = () => {
 
 
 
-                            <Paper
+                            {/* <Paper
                                 sx={{
                                     p: 2,
                                     display: 'flex',
@@ -752,14 +725,14 @@ const Dc = () => {
                                     </div>
                                     <div className=' col d-flex justify-content-end'>
                                         <div className='me-2 '>
-                                            {/*<button type="button" className='btn btn-secondary' onClick={addDcValue} >Add Item</button>*/}
+                                            
                                             <Button startIcon={<Add />} onClick={() => dcItemAdd()} size='small' sx={{ minWidth: "130px" }} variant='contained'>Add Item</Button>
                                         </div>
 
                                     </div>
 
                                 </div>
-                            </Paper>
+                            </Paper> */}
 
                             <Paper
                                 sx={{
@@ -886,7 +859,7 @@ const Dc = () => {
 
                 <div>
                     <Button variant='contained' color='error' className='me-3' onClick={() => handleClose()}>Cancel</Button>
-                    <Button variant='contained' color='success' onClick={() => { setConfirmSubmit(true) }}>Submit {loader ? <CircularProgress sx={{color: "inherit"}} variant="indeterminate" size={20} /> : ""}</Button>
+                    <Button variant='contained' color='success' onClick={() => { setConfirmSubmit(true) }}>Submit {loader ? <CircularProgress sx={{ color: "inherit" }} variant="indeterminate" size={20} /> : ""}</Button>
                 </div>
             </DialogActions>
 

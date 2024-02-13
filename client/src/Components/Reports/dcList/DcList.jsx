@@ -33,7 +33,7 @@ export const DcListContent = createContext(null);
 const DcList = () => {
 
     const empRole = useEmployee()
-    const { loggedEmp } = empRole
+    const { loggedEmp, allowedPlants } = empRole
 
 
     const [printState, setPrintState] = useState(false)
@@ -65,15 +65,15 @@ const DcList = () => {
     const [itemPlantList, setItemPlantList] = useState([])
     const ItemFetch = async (deps) => {
         try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/itemAdd/getAllItemAdds`
-            );
+            const response = await axios.post(
+                `${process.env.REACT_APP_PORT}/itemAdd/getItemByPlant`, { allowedPlants: allowedPlants }
+              );
             console.log(response.data.result)
-            const plantItems = response.data.result.filter(item => (loggedEmp.plantDetails.map(plant => plant.plantName).includes(item.itemPlant) && item.dcStatus != "1"))
-            console.log(plantItems)
+           
+            
             console.log(deps)
             if (deps.length > 0) {
-                const departmentItems = plantItems.filter(item => deps.includes(item.itemCurrentLocation))
+                const departmentItems = response.data.result.filter(item => deps.includes(item.itemCurrentLocation))
                 console.log(departmentItems)
                 setItemPlantList(departmentItems);
                 setItemDepartment(departmentItems);
@@ -179,9 +179,9 @@ const DcList = () => {
 
     const FetchData = async () => {
         try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/vendor/getAllVendors`
-            );
+            const response = await axios.post(
+                `${process.env.REACT_APP_PORT}/vendor/getVendorByPlants`, { allowedPlants: allowedPlants }
+              );
             console.log(response.data)
 
             setVendorFullList(response.data.result);
@@ -276,8 +276,8 @@ const DcList = () => {
     const Columns = [
 
         { field: 'id', headerName: 'Si. No', headerAlign: "center", align: "center", width: 70, renderCell: (params) => params.api.getAllRowIds().indexOf(params.id) + 1 },
-        ...(empRole && empRole.employee !== 'viewer'
-            ? [{ field: 'editButton', headerAlign: "center", align: "center", headerName: 'Edit', width: 100, renderCell: (params) => <Button onClick={() => { setSelectedRows(params.row); setDcEditOpen(true) }}><Edit color='success' /></Button> }] : []),
+        // ...(empRole && empRole.employee !== 'viewer'
+        //     ? [{ field: 'editButton', headerAlign: "center", align: "center", headerName: 'Edit', width: 100, renderCell: (params) => <Button onClick={() => { setSelectedRows(params.row); setDcEditOpen(true) }}><Edit color='success' /></Button> }] : []),
         {
             field: 'viewButton',
             headerAlign: "center",
@@ -294,7 +294,7 @@ const DcList = () => {
             ),
         },
         { field: 'dcNo', headerName: 'Dc No', headerAlign: "center", align: "center", width: 100 },
-        { field: 'dcDate', headerName: 'Dc Date', headerAlign: "center", align: "center", width: 200 },
+        { field: 'dcDate', headerName: 'Dc Date', headerAlign: "center", align: "center", width: 200, renderCell : (params) => dayjs(params.row.dcDate).format("DD-MM-YYYY") },
         { field: 'dcPartyName', headerName: 'Dc PartyName', headerAlign: "center", align: "center", width: 300 },
         { field: 'printButton', headerName: 'Print', headerAlign: "center", align: "center", width: 100, renderCell: (params) => <Button component={Link} to={`${process.env.REACT_APP_PORT}/dcCertificate/${params.row.dcNo}.pdf`} target='_blank'><PrintRounded color='success' /></Button> }
     ]
@@ -508,7 +508,7 @@ const DcList = () => {
 
     const dcListColumns = [
         { field: 'id', headerName: 'Si. No', width: 70, renderCell: (params) => params.api.getAllRowIds().indexOf(params.id) + 1, headerAlign: "center", align: "center", },
-        { field: 'itemIMTENo', headerName: 'Item IMTENo', width: 100, headerAlign: "center", align: "center", },
+        { field: 'itemIMTENo', headerName: 'Item IMTENo', width: 150, headerAlign: "center", align: "center", },
         { field: 'itemAddMasterName', headerName: 'Item Description', headerAlign: "center", align: "center", width: 150 },
         { field: 'itemRangeSize', headerName: 'Range/Size', headerAlign: "center", align: "center", width: 100 },
         { field: 'dcItemRemarks', headerName: 'Remarks', headerAlign: "center", align: "center", width: 200 },
@@ -609,7 +609,7 @@ const DcList = () => {
                                 </div>
                                 <div className='col '>
 
-                                    <TextField label="Default Location "
+                                    <TextField label="Primary Location "
                                         id="dcDepartmentId"
                                         select
                                         defaultValue="all"
@@ -849,7 +849,7 @@ const DcList = () => {
                             </div>
 
                             <DcListContent.Provider
-                                value={{ dcEditOpen, setDcEditOpen, selectedRows, dcListFetchData, printState, setPrintState, itemPlantList, dcDataDcList, ItemFetch }}
+                                value={{ dcEditOpen, setDcEditOpen, selectedRows, dcListFetchData, printState, setPrintState, itemPlantList, dcDataDcList, ItemFetch, allowedPlants }}
                             >
                                 <DcEdit />
                             </DcListContent.Provider>

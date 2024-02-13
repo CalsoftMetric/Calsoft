@@ -9,7 +9,7 @@ import { Delete, Done } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { Link as RouterLink } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Add, Remove, HighlightOffRounded, UploadFile } from '@mui/icons-material';
+import { Add, Remove, HighlightOffRounded, UploadFile, Close, CloudUpload } from '@mui/icons-material';
 import { Link } from '@mui/material';
 import { useEmployee } from '../../App';
 
@@ -18,7 +18,9 @@ const ItemAdd = () => {
     // Units Data
 
     const employeeRole = useEmployee();
+    const { allowedPlants } = employeeRole
 
+    const [addOpenData, setAddOpenData] = useState(false)
     const [units, setUnits] = useState([]);
     const UnitFetch = async () => {
         try {
@@ -97,6 +99,24 @@ const ItemAdd = () => {
     };
 
 
+    const [department, setDepartment] = useState([])
+    const DepFetch = async () => {
+        try {
+            const response = await axios.get(
+                `${process.env.REACT_APP_PORT}/department/getAllDepartments`
+            );
+            // const defaultDepartment = response.data.result.filter((dep) => dep.defaultdep === "yes")
+            setDepartment(response.data.result);
+
+            console.log(response.data)
+        } catch (err) {
+            console.log(err);
+        }
+    };
+    //get Designations
+    useEffect(() => {
+        DepFetch()
+    }, []);
 
 
 
@@ -152,8 +172,8 @@ const ItemAdd = () => {
 
     const getDistinctItemName = async () => {
         try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/itemAdd/getAllItemAdds`
+            const response = await axios.post(
+                `${process.env.REACT_APP_PORT}/itemAdd/getItemByPlant`, { allowedPlants: allowedPlants }
             );
             console.log(response.data)
             const isItemMaster = response.data.result.filter(item => item.isItemMaster === "1")
@@ -186,8 +206,8 @@ const ItemAdd = () => {
 
     const vendorListFetch = async () => {
         try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/vendor/getAllVendors`
+            const response = await axios.post(
+                `${process.env.REACT_APP_PORT}/vendor/getVendorByPlants`, { allowedPlants: allowedPlants }
             );
             const vendorList = response.data.result
             const customerList = vendorList.filter((item) => item.customer === "1" || item.supplier === "1");
@@ -201,7 +221,7 @@ const ItemAdd = () => {
             setOEMList(OEMList);
             setSupplierList(SupplierList)
             setSuppOEM(suppOEM)
-            console.log(SupplierList)
+
 
         } catch (err) {
             console.log(err);
@@ -210,6 +230,11 @@ const ItemAdd = () => {
     useEffect(() => {
         vendorListFetch();
     }, []);
+
+    // useEffect(()=> {
+    //     const plantVendors = vendorList.filter(ven => ven.vendorPlant.includes(itemAddData.itemPlant))
+
+    // }, [itemAddData.itemPlant])
 
     //
 
@@ -229,6 +254,7 @@ const ItemAdd = () => {
         isItemMaster: "0",
         itemAddMasterName: "",
         itemIMTENo: "",
+        itemSAPNo: "",
         itemImage: "",
         itemType: "",
         itemRangeSize: "",
@@ -243,11 +269,11 @@ const ItemAdd = () => {
         itemDepartment: "",
         itemCurrentLocation: "",
         itemArea: "N/A",
-        itemPlaceOfUsage: "N/A",
+        itemPlaceOfUsage: "",
         itemCalFreInMonths: "",
         itemCalAlertDays: "",
         itemCalibrationSource: "",
-        itemCalibrationDoneAt: "",
+        itemCalibrationDoneAt: "Lab",
         itemItemMasterName: "",
         itemItemMasterIMTENo: [],
         itemSupplier: [],
@@ -281,8 +307,20 @@ const ItemAdd = () => {
         itemPrevCalData: "",
         itemPlant: employeeRole.loggedEmp.plantDetails.length === 1 ? employeeRole.loggedEmp.plantDetails[0].plantName : "",
         itemCreatedBy: employeeRole && employeeRole.loggedEmp._id,
-    })
 
+        calibrationCost: "",
+        gaugeUsage: "",
+        lifealertDays: "",
+        purchaseRefNo: "",
+        purchaseDate: "",
+        purchaseCost: "",
+        specialRemark: "",
+        drawingIssueNo: "",
+        drawingNo: "",
+        rdName: "",
+        msaName: "",
+        otherFile: "",
+    })
     //upload Button
     const VisuallyHiddenInput = styled('input')({
         clip: 'rect(0 0 0 0)',
@@ -373,10 +411,8 @@ const ItemAdd = () => {
             }));
             console.log("working")
         }
-        
     }
-
-    useEffect(()=> {
+    useEffect(() => {
         const departments = employeeRole.loggedEmp.plantDetails.filter(plant => plant.plantName === itemAddData.itemPlant)
         console.log(departments)
         setAvailableDeps(departments)
@@ -438,15 +474,17 @@ const ItemAdd = () => {
         itemMasterById(itemAddData.itemAddMasterName);
     }, [itemAddData.itemAddMasterName]);
 
+    const [plantWisePart, setPlantWisePart] = useState([])
+
     const [partData, setPartData] = useState([])
     const getPartList = async () => {
         try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/part/getAllParts`
+            const response = await axios.post(
+                `${process.env.REACT_APP_PORT}/part/getPartsByPlant`, { allowedPlants: allowedPlants }
             );
             console.log(response.data)
             setPartData(response.data.result)
-
+            setPlantWisePart(response.data.result)
 
         } catch (err) {
             console.log(err);
@@ -457,6 +495,10 @@ const ItemAdd = () => {
         getPartList();
     }, []);
 
+    useEffect(()=> {
+        const filteredPart = partData.filter(part => part.partPlant === itemAddData.itemPlant)
+        setPlantWisePart(filteredPart)
+    }, [itemAddData.itemPlant])
 
     const [imteList, setImteList] = useState([])
     const getImteList = async () => {
@@ -524,9 +566,7 @@ const ItemAdd = () => {
         })
     };
     //
-
     //PartCheckBox
-
     const ITEM_HEIGHT = 48;
     const ITEM_PADDING_TOP = 8;
     const MenuProps = {
@@ -537,14 +577,8 @@ const ItemAdd = () => {
             },
         },
     }
-
-
     const [open, setOpen] = useState(false)
     const navigate = useNavigate();
-
-
-
-
     //validate function 
     const [errors, setErrors] = useState({})
 
@@ -586,12 +620,10 @@ const ItemAdd = () => {
                 const response = await axios.post(
                     `${process.env.REACT_APP_PORT}/itemAdd/createItemAdd`, itemAddData
                 );
-
+                console.log(response.data.result)
                 setSnackBarOpen(true)
-
                 console.log("Item Created Successfully")
                 setErrorHandler({ status: response.data.status, message: response.data.message, code: "success" })
-
                 setTimeout(() => {
                     navigate('/itemList');
                 }, 2000);
@@ -632,7 +664,7 @@ const ItemAdd = () => {
         console.log(selectedFile)
         if (selectedFile) {
             console.log("working")
-           
+
             const formData = new FormData();
             formData.append('file', selectedFile);
             try {
@@ -651,6 +683,76 @@ const ItemAdd = () => {
                 console.error('Error uploading the file:', error);
             }
 
+        }
+    };
+
+    const [certMessage, setCertMessage] = useState(null)
+
+    const handleAdditionalCertificate = (event, name) => {
+        const selectedFile = event.target.files[0];
+        if (selectedFile) {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('rdName', itemAddData.itemIMTENo + "R&R");  // Append rdName to the formData
+            try {
+                axios.post(`${process.env.REACT_APP_PORT}/upload/additionalCertificates`, formData)
+                    .then(response => {
+                        setItemAddData((prev) => ({ ...prev, rdName: response.data.name }));
+                        setCertMessage("Additional Certificates Uploaded Successfully");
+                        console.log("Additional Certificates Uploaded Successfully");
+                    })
+                    .catch(error => {
+                        setCertMessage("Error Uploading Certificate");
+                        console.log(error);
+                    });
+            } catch (error) {
+                console.error('Error uploading the file:', error);
+            }
+        }
+    };
+    const handleMSACertificate = (event, name) => {
+        const selectedFile = event.target.files[0];
+        if (selectedFile) {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('msaName', itemAddData.itemIMTENo + "MSA");// Append rdName to the formData
+            try {
+                axios.post(`${process.env.REACT_APP_PORT}/upload/msaCertificates`, formData)
+                    .then(response => {
+                        setItemAddData((prev) => ({ ...prev, msaName: response.data.name }));
+                        setCertMessage("MSA Certificates Uploaded Successfully");
+                        console.log(" MSA Certificates Uploaded Successfully");
+                    })
+                    .catch(error => {
+                        setCertMessage("Error Uploading Certificate");
+                        console.log(error);
+                    });
+            } catch (error) {
+                console.error('Error uploading the file:', error);
+            }
+        }
+    };
+
+    const handleOtherFilesCertificate = (event, name) => {
+        const selectedFile = event.target.files[0];
+        if (selectedFile) {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('otherFile', itemAddData.itemIMTENo + "OtherFiles");// Append rdName to the formData
+            try {
+                axios.post(`${process.env.REACT_APP_PORT}/upload/otherFilesCertificates`, formData)
+                    .then(response => {
+                        setItemAddData((prev) => ({ ...prev, otherFile: response.data.name }));
+                        setCertMessage("OtherFiles Certificates Uploaded Successfully");
+                        console.log(" OtherFiles Certificates Uploaded Successfully");
+                    })
+                    .catch(error => {
+                        setCertMessage("Error Uploading Certificate");
+                        console.log(error);
+                    });
+            } catch (error) {
+                console.error('Error uploading the file:', error);
+            }
         }
     };
 
@@ -673,18 +775,9 @@ const ItemAdd = () => {
         setUploadMessage(null)
     }
 
-
-
-
-
-
-
     useEffect(() => {
         calculateResultDate(itemAddData.itemCalDate, itemAddData.itemCalFreInMonths);
     }, [itemAddData.itemCalDate, itemAddData.itemCalFreInMonths]);
-
-
-
     const calculateResultDate = (itemCalDate, itemCalFreInMonths) => {
         const parsedDate = dayjs(itemCalDate);
         if (parsedDate.isValid() && !isNaN(parseInt(itemCalFreInMonths))) {
@@ -698,17 +791,12 @@ const ItemAdd = () => {
     };
 
     console.log(availabelDeps)
-
-
-
-
     return (
         <div style={{ margin: "2rem", backgroundColor: "#f5f5f5" }}>
             <form>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <Paper className='row' elevation={12} sx={{ p: 1.5, mb: 2, mx: 0 }}>
                         <div className="col-lg-5 row g-2">
-
                             <div className='col-9'>
                                 <TextField
                                     {...(errors.itemAddMasterName !== "" && { helperText: errors.itemAddMasterName, error: true })}
@@ -718,10 +806,8 @@ const ItemAdd = () => {
                                         <MenuItem key={index} value={item.itemDescription}>{item.itemDescription}</MenuItem>
                                     ))}
                                 </TextField>
-
-
                             </div>
-                            <div className="col-6">
+                            <div className="col-4">
                                 <Autocomplete
                                     disablePortal
                                     id="itemIMTENoId"
@@ -733,12 +819,10 @@ const ItemAdd = () => {
                                         name='itemIMTENo' onChange={handleItemAddChange}  {...params} label="IMTE No" />}
                                     getOptionDisabled={option => true}
                                     clearOnBlur={false}
-
-
                                 />
-
-
-
+                            </div>
+                            <div className="col-3">
+                                <TextField size='small' variant='outlined' value={itemAddData.itemSAPNo} label="SAP NO" onChange={handleItemAddChange} name='itemSAPNo' id='itemSAPNoId' fullWidth />
 
                             </div>
                             <div className="col">
@@ -746,16 +830,13 @@ const ItemAdd = () => {
                                     control={<Checkbox name='isItemMaster' onChange={handleItemAddChange} />}
                                     label="Use as Master"
                                 />
-
                             </div>
-
-
                         </div>
-                        <div className="col-lg-2 " >
-                            <Typography variant='h3' style={{ height: "50%", margin: "13% 0" }} className='text-center'>Item Add</Typography>
+                        <div className="col-lg-3 " >
+                            <Typography variant='h3' style={{ height: "100%", margin: "13% 0" }} className='text-center'>Item Add</Typography>
                         </div>
 
-                        <div className="col-lg-5 d-flex justify-content-end">
+                        <div className="col-lg-4 d-flex justify-content-end">
                             {itemAddData.itemImage && <Card elevation={12} sx={{ width: "110px", height: "110px" }}>
 
                                 <img src={`${process.env.REACT_APP_PORT}/itemMasterImages/${itemAddData.itemImage}`} style={{ width: "100%", height: "100%" }} />
@@ -864,7 +945,7 @@ const ItemAdd = () => {
                                         Select Location
                                     </Typography>
                                     <div className="row g-2 mb-2">
-                                        <div className="col-md-6">
+                                        <div className="col-md-4">
                                             <TextField
                                                 {...(errors.itemDepartment !== "" && { helperText: errors.itemDepartment, error: true })}
                                                 value={employeeRole.loggedEmp.plantDetails.length === 1 ? employeeRole.loggedEmp.plantDetails[0].plantName : itemAddData.itemPlant}
@@ -885,37 +966,26 @@ const ItemAdd = () => {
                                                 ))}
                                             </TextField>
                                         </div>
-                                        <div className="col-md-6">
+                                        <div className="col-md-4">
 
                                             <TextField
                                                 {...(errors.itemDepartment !== "" && { helperText: errors.itemDepartment, error: true })}
-                                                value={itemAddData.itemDepartment} disabled={itemAddData.itemPlant === ""} onChange={handleItemAddChange} size='small' select fullWidth variant='outlined' label="Department" name='itemDepartment' id='itemDepartmentId'>
+                                                value={itemAddData.itemDepartment} disabled={itemAddData.itemPlant === ""} onChange={handleItemAddChange} size='small' select fullWidth variant='outlined' label="Primary Location" name='itemDepartment' id='itemDepartmentId'>
                                                 {availabelDeps.length > 0 && availabelDeps[0].departments.length > 0 && availabelDeps[0].departments.map((dep, index) => (
                                                     <MenuItem key={index} value={dep}>{dep}</MenuItem>
                                                 ))}
                                             </TextField>
                                         </div>
-
-
+                                        <div className="col-md-4">
+                                            <TextField value={itemAddData.itemPlaceOfUsage} onChange={handleItemAddChange} size='small' select fullWidth variant='outlined' label="secondary Location" name='itemPlaceOfUsage' id='itemPlaceOfUsageId'>
+                                                {department.map((item, index) => (
+                                                    <MenuItem key={index} value={item.department}>{item.department}</MenuItem>
+                                                ))}
+                                            </TextField>
+                                        </div>
                                     </div>
                                 </Paper>
                             </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
                             <Paper className='col-lg ' elevation={12} sx={{ p: 2 }}>
                                 <Typography variant='h6' className='text-center'>Calibration</Typography>
@@ -934,7 +1004,7 @@ const ItemAdd = () => {
 
                                         </TextField>
                                     </div>
-                                    <div className='col-lg-12'>
+                                    <div className='col-md-6'>
                                         <TextField
                                             {...(errors.itemCalibrationSource !== "" && { helperText: errors.itemCalibrationSource, error: true })}
                                             size='small' value={itemAddData.itemCalibrationSource} onChange={handleItemAddChange} fullWidth variant='outlined' select label="Calibration Source" name='itemCalibrationSource'>
@@ -943,6 +1013,18 @@ const ItemAdd = () => {
                                             <MenuItem value="outsource">OutSource</MenuItem>
                                             <MenuItem value="oem">OEM</MenuItem>
                                         </TextField>
+                                    </div>
+                                    <div className='col-md-6'>
+                                        <RadioGroup
+                                            className="d-flex justify-content-center"
+                                            row
+                                            name='itemCalibrationDoneAt'
+                                            onChange={handleItemAddChange}
+                                            checked={itemAddData.itemCalibrationDoneAt}
+                                        >
+                                            <FormControlLabel value="Lab" checked={itemAddData.itemCalibrationDoneAt === "Lab"} control={<Radio />} label="Lab" />
+                                            <FormControlLabel value="Site" checked={itemAddData.itemCalibrationDoneAt === "Site"} control={<Radio />} label="Site" />
+                                        </RadioGroup>
                                     </div>
                                 </div>
                                 {itemAddData.itemCalibrationSource === "inhouse" &&
@@ -986,7 +1068,7 @@ const ItemAdd = () => {
                                 {itemAddData.itemCalibrationSource === "outsource" &&
                                     <div className='row g-2'>
                                         <h6 className='text-center'>Enter Supplier Details</h6>
-                                        <div className="col-md-7">
+                                        <div className="col-md">
 
                                             <FormControl size='small' component="div" fullWidth>
                                                 <InputLabel id="itemSupplierId">Select Supplier</InputLabel>
@@ -1016,25 +1098,17 @@ const ItemAdd = () => {
                                         </div>
 
 
-                                        <RadioGroup
-                                            className="col-md-5 d-flex justify-content-center"
-                                            row
-                                            name='itemCalibrationDoneAt'
-                                            onChange={handleItemAddChange}
-                                            checked={itemAddData.itemCalibrationDoneAt}
-                                        >
-                                            <FormControlLabel value="Lab" control={<Radio />} label="Lab" />
-                                            <FormControlLabel value="Site" control={<Radio />} label="Site" />
-                                        </RadioGroup>
+
 
 
 
                                     </div>}
 
+
                                 {itemAddData.itemCalibrationSource === "oem" &&
                                     <div className='row g-2'>
                                         <h6 className='text-center'>Enter oem Details</h6>
-                                        <div className="col-md-7">
+                                        <div className="col-md">
                                             <FormControl size='small' component="div" fullWidth>
                                                 <InputLabel id="itemOEMId">Select OEM</InputLabel>
                                                 <Select
@@ -1069,16 +1143,7 @@ const ItemAdd = () => {
 
 
                                         </div>
-                                        <RadioGroup
-                                            className="col-md-5 d-flex justify-content-center"
-                                            row
-                                            name='itemCalibrationDoneAt'
-                                            onChange={handleItemAddChange}
 
-                                        >
-                                            <FormControlLabel value="Lab" control={<Radio />} label="Lab" />
-                                            <FormControlLabel value="Site" control={<Radio />} label="Site" />
-                                        </RadioGroup>
 
 
 
@@ -1248,7 +1313,6 @@ const ItemAdd = () => {
                                                         name='itemUncertainity'
                                                         value={itemAddData.itemUncertainity}
                                                     />
-
                                                     <TextField disabled={itemAddData.itemPrevCalData !== "available"}
                                                         select
                                                         size='small'
@@ -1313,8 +1377,9 @@ const ItemAdd = () => {
                                                     input={<OutlinedInput fullWidth label="Select Part" />}
                                                     renderValue={(selected) => selected.join(", ")} MenuProps={MenuProps}
                                                     fullWidth
+                                                    disabled={!itemAddData.itemPlant}
                                                 >
-                                                    {partData.map((name, index) => (
+                                                    {plantWisePart.length > 0 && plantWisePart.map((name, index) => (
                                                         <MenuItem key={index} value={name.partNo}>
                                                             <Checkbox checked={itemAddData.itemPartName.indexOf(name.partNo) > -1} />
                                                             <ListItemText primary={name.partNo + " - " + name.partName + " - " + name.customer} />
@@ -1683,15 +1748,322 @@ const ItemAdd = () => {
                                 </table>
                             </Paper>}
 
-                            <div className="d-flex justify-content-end">
+                            <Dialog fullWidth={true} keepMounted maxWidth="xl" open={addOpenData} sx={{ color: "#f1f4f4" }}
+                                onClose={(e, reason) => {
+                                    console.log(reason)
+                                    if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+                                        setAddOpenData(false)
+                                    }
+                                }}>
+                                <DialogTitle align='center' >Additional Information</DialogTitle>
+                                <IconButton
+                                    aria-label="close"
+                                    onClick={() => setAddOpenData(false)}
+                                    sx={{
+                                        position: 'absolute',
+                                        right: 5,
+                                        top: 5,
+                                        color: (theme) => theme.palette.grey[500],
+                                    }}
+                                >
+                                    <Close />
+                                </IconButton>
 
-                                <Button variant='contained' color='warning' onClick={() => setOpen(true)} className='me-3' type="button">
-                                    Item Create
-                                </Button>
-                                <Button component={RouterLink} to={`/itemList/`} variant="contained" color="error">
-                                    <ArrowBackIcon /> Back To List
-                                </Button>
+                                <DialogContent >
+                                    <div className='row g-2 mb-2'>
+                                        <div className='col'>
+                                            <TextField label="Calibration Cost"
+                                                id="calibrationCostId"
+                                                defaultValue=""
+                                                value={itemAddData.calibrationCost}
+                                                onChange={handleItemAddChange}
+                                                size="small"
+                                                fullWidth
+                                                name="calibrationCost" />
+
+                                        </div>
+                                        <div className='col'>
+                                            <TextField label="Gauge life in days"
+                                                id="gaugeUsageId"
+                                                defaultValue=""
+                                                size="small"
+                                                fullWidth
+                                                value={itemAddData.gaugeUsage}
+                                                onChange={handleItemAddChange}
+                                                name="gaugeUsage" />
+
+                                        </div>
+                                        <div className='col'>
+
+                                            <TextField label="Gauge life alert in days"
+                                                id="lifealertDaysId"
+                                                defaultValue=""
+                                                size="small"
+                                                value={itemAddData.lifealertDays}
+                                                onChange={handleItemAddChange}
+                                                fullWidth
+                                                name="lifealertDays" />
+                                        </div>
+                                    </div>
+                                    <div className='row g-2 mb-2'>
+                                        <div className='col'>
+                                            <TextField label="Purchase Ref.No"
+                                                id="purchaseRefNoId"
+                                                defaultValue=""
+                                                value={itemAddData.purchaseRefNo}
+                                                onChange={handleItemAddChange}
+                                                size="small"
+                                                fullWidth
+                                                name="purchaseRefNo" />
+                                        </div>
+                                        <div className='col' style={{ width: "200%" }}>
+                                            <TextField label="Purchase Date"
+                                                id="purchaseDateId"
+                                                defaultValue=""
+                                                value={itemAddData.purchaseDate}
+                                                onChange={handleItemAddChange}
+                                                size="small"
+                                                fullWidth
+                                                name="purchaseDate" />
+                                            {/* <DatePicker
+                                                fullWidth
+                                                id="purchaseDateId"
+                                                name="purchaseDate"
+                                                value={dayjs(itemAddData.purchaseDate)}
+                                                onChange={(newValue) =>
+                                                    setItemAddData((prev) => ({ ...prev, purchaseDate: newValue.format("YYYY-MM-DD") }))
+                                                }
+                                                label="Purchase Date"
+                                                slotProps={{ textField: { size: 'small' } }}
+                                                className="h-100"
+                                            format="DD-MM-YYYY" />*/}
+                                        </div>
+                                        <div className='col'>
+                                            <TextField label="Purchase Cost"
+                                                id="purchaseCostId"
+                                                defaultValue=""
+                                                size="small"
+                                                fullWidth
+                                                value={itemAddData.purchaseCost}
+                                                onChange={handleItemAddChange}
+                                                name="purchaseCost" />
+                                        </div>
+
+                                    </div>
+                                    <div className='row g-2 mb-2'>
+                                        <div className='col'>
+                                            <TextField label="Special Remark"
+                                                id="specialRemarkId"
+                                                defaultValue=""
+                                                size="small"
+                                                value={itemAddData.specialRemark}
+                                                onChange={handleItemAddChange}
+                                                fullWidth
+                                                name="specialRemark" />
+                                        </div>
+                                        <div className='col'>
+                                            <TextField label="Drawing Issue No"
+                                                id="drawingIssueNoId"
+                                                defaultValue=""
+                                                size="small"
+                                                value={itemAddData.drawingIssueNo}
+                                                onChange={handleItemAddChange}
+                                                fullWidth
+                                                name="drawingIssueNo" />
+                                        </div>
+                                        <div className='col'>
+                                            <TextField label="Drawing No"
+                                                id="drawingNoId"
+                                                defaultValue=""
+                                                size="small"
+                                                onChange={handleItemAddChange}
+                                                value={itemAddData.drawingNo}
+                                                fullWidth
+                                                name="drawingNo" />
+                                        </div>
+                                    </div>
+                                    <div className='row g-2'>
+
+                                        <table className=' table-bordered '>
+                                            <tbody>
+                                                <tr>
+                                                    <td>
+                                                        <Button helperText="Hello" className='me-2' size='small' component="label" fullWidth variant="contained" startIcon={<CloudUpload />} >
+                                                            R&R Upload
+                                                            <VisuallyHiddenInput type="file" onChange={handleAdditionalCertificate} />
+                                                        </Button>
+                                                    </td>
+                                                    <td>
+                                                        <div className='d-flex justify-content-center '>
+                                                            {(itemAddData.rdName !== "" && itemAddData.rdName !== undefined) &&
+                                                                <Chip
+                                                                    className='col-12'
+                                                                    icon={<Done />}
+                                                                    color="success"
+                                                                    label={itemAddData.rdName}
+                                                                    onClick={() => {
+                                                                        const fileUrl = `${process.env.REACT_APP_PORT}/additionalCertificates/${itemAddData.rdName}`;
+                                                                        window.open(fileUrl, '_blank'); // Opens the file in a new tab/window
+                                                                    }}
+                                                                    onDelete={() => setItemAddData((prev) => ({ ...prev, rdName: "" }))}
+                                                                />}
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <Button helperText="Hello" className='me-2' component="label" size='small' fullWidth variant="contained" startIcon={<CloudUpload />} >
+                                                            MSA Upload
+                                                            <VisuallyHiddenInput type="file" onChange={handleMSACertificate} />
+                                                        </Button>
+                                                    </td>
+                                                    <td>
+                                                        <div className='d-flex justify-content-center '>
+                                                            {(itemAddData.msaName !== "" && itemAddData.msaName !== undefined) &&
+                                                                <Chip
+                                                                    className='col-12'
+                                                                    icon={<Done />}
+                                                                    color="success"
+                                                                    label={itemAddData.msaName}
+                                                                    onClick={() => {
+                                                                        const fileUrl = `${process.env.REACT_APP_PORT}/msaCertificates/${itemAddData.msaName}`;
+                                                                        window.open(fileUrl, '_blank'); // Opens the file in a new tab/window
+                                                                    }}
+                                                                    onDelete={() => setItemAddData((prev) => ({ ...prev, msaName: "" }))}
+                                                                />}
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <Button helperText="Hello" component="label" size='small' fullWidth variant="contained" startIcon={<CloudUpload />} >
+                                                            Drawing Upload
+                                                            <VisuallyHiddenInput type="file" onChange={handleOtherFilesCertificate} />
+                                                        </Button>
+                                                    </td>
+                                                    <td>
+                                                        <div className='d-flex justify-content-center '>
+                                                            {(itemAddData.otherFile !== "" && itemAddData.otherFile !== undefined) &&
+                                                                <Chip
+                                                                    className='col-12'
+                                                                    icon={<Done />}
+                                                                    color="success"
+                                                                    label={itemAddData.otherFile}
+                                                                    onClick={() => {
+                                                                        const fileUrl = `${process.env.REACT_APP_PORT}/otherFilesCertificates/${itemAddData.otherFile}`;
+                                                                        window.open(fileUrl, '_blank'); // Opens the file in a new tab/window
+                                                                    }}
+                                                                    onDelete={() => setItemAddData((prev) => ({ ...prev, otherFile: "" }))}
+                                                                />}
+                                                        </div>
+                                                    </td>
+
+                                                </tr>
+
+                                            </tbody>
+                                        </table>
+
+
+
+                                        {/* <div className='col-md-6 d-flex' >
+                                            {itemAddData.rdName === "" ?
+                                                <Button helperText="Hello" className='me-2' size='small' component="label" fullWidth variant="contained" startIcon={<CloudUpload />} >
+                                                    R&R Upload
+                                                    <VisuallyHiddenInput type="file" onChange={handleAdditionalCertificate} />
+                                                </Button>
+                                                : <div className='row  justify-content-center '>
+                                                    {(itemAddData.rdName !== "" && itemAddData.rdName !== undefined) &&
+                                                        <Chip
+                                                            className='mt-2'
+                                                            icon={<Done />}
+                                                            color="success"
+                                                            label={itemAddData.rdName}
+                                                            onClick={() => {
+                                                                const fileUrl = `${process.env.REACT_APP_PORT}/additionalCertificates/${itemAddData.rdName}`;
+                                                                window.open(fileUrl, '_blank'); // Opens the file in a new tab/window
+                                                            }}
+                                                            onDelete={() => setItemAddData((prev) => ({ ...prev, rdName: "" }))}
+                                                        />}
+                                                </div>}
+                                                
+                                            {itemAddData.msaName === "" ?
+                                                <Button helperText="Hello" className='me-2' component="label" size='small' fullWidth variant="contained" startIcon={<CloudUpload />} >
+                                                    MSA Upload
+                                                    <VisuallyHiddenInput type="file" onChange={handleMSACertificate} />
+                                                </Button>
+                                                : <div className='d-flex justify-content-center '>
+                                                    {(itemAddData.msaName !== "" && itemAddData.msaName !== undefined) &&
+                                                        <Chip
+                                                            className='mt-2'
+                                                            icon={<Done />}
+                                                            color="success"
+                                                            label={itemAddData.msaName}
+                                                            onClick={() => {
+                                                                const fileUrl = `${process.env.REACT_APP_PORT}/msaCertificates/${itemAddData.msaName}`;
+                                                                window.open(fileUrl, '_blank'); // Opens the file in a new tab/window
+                                                            }}
+                                                            onDelete={() => setItemAddData((prev) => ({ ...prev, msaName: "" }))}
+                                                        />}
+                                                </div>}
+
+                                            {itemAddData.otherFile === "" ?
+                                            <Button helperText="Hello" component="label" size='small' fullWidth variant="contained" startIcon={<CloudUpload />} >
+                                              Drawing Upload
+                                                <VisuallyHiddenInput type="file" onChange={handleOtherFilesCertificate} />
+                                            </Button>
+                                           : <div className='d-flex justify-content-center '>
+                                                {(itemAddData.otherFile !== "" && itemAddData.otherFile !== undefined) &&
+                                                    <Chip
+                                                        className='mt-2'
+                                                        icon={<Done />}
+                                                        color="success"
+                                                        label={itemAddData.otherFile}
+                                                        onClick={() => {
+                                                            const fileUrl = `${process.env.REACT_APP_PORT}/otherFilesCertificates/${itemAddData.otherFile}`;
+                                                            window.open(fileUrl, '_blank'); // Opens the file in a new tab/window
+                                                        }}
+                                                        onDelete={() => setItemAddData((prev) => ({ ...prev, otherFile: "" }))}
+                                                    />}
+                                            </div>}
+                                        </div> */}
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+
+
+                            <div className="d-flex justify-content-center">
+                                <div className='col'>
+                                    <Button
+                                        color="secondary"
+                                        className='col '
+                                        variant='contained'
+                                        onClick={() => setAddOpenData(true)}
+                                    >
+                                        Additional Information
+                                    </Button>
+                                </div>
+
+                                <div className="d-flex justify-content-end">
+                                    <Button variant='contained' color='warning' onClick={() => setOpen(true)} className='me-3' type="button">
+                                        Item Create
+                                    </Button>
+                                    <Button component={RouterLink} to={`/itemList/`} variant="contained" color="error">
+                                        <ArrowBackIcon /> Back To List
+                                    </Button>
+                                </div>
+                               
+
                             </div>
+
+
+
+
+
+                            
+
+
+
+
+
+
+
+
 
 
                             <Snackbar anchorOrigin={{ vertical: "top", horizontal: "right" }} open={snackBarOpen} autoHideDuration={6000} onClose={handleSnackClose}>

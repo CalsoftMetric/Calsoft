@@ -14,7 +14,7 @@
     <style>
         .page-header,
         .page-header-space {
-            height: 198px;
+            height: 220px;
         }
 
         .page-footer,
@@ -76,7 +76,7 @@
 
 <body style="font-size: small;">
     <div class="page-header" style="text-align: center">
-        <h6 class="text-center text-decoration-underline">GRN</h6>
+        <h6 class="text-center text-decoration-underline">Goods Receipt Notes</h6>
         <table class="table">
             <tbody>
                 <tr class="border-bottom border-secondary">
@@ -93,52 +93,45 @@
                         </table>
                     </td>
                     <td width="20%" class="text-end">
-                        <img src="{{logo}}"
+                        <img src="{{logo}}" alt="logo"
                             width="80px" height="80px" />
                     </td>
                 </tr>
 
                 <tr style="height: 100%;" class="border border-secondary">
                     <td width="65%" colspan="2" style="height: 100%;">
-                        <table style="height: 100%;" class="text-start">
+                        <table style="height: 100%;" class=" text-start" >
                             <tbody>
                                 <tr>
                                     <th>To</th>
                                 </tr>
                                 <tr>
-                                    <th style="padding-left: 10px;">{{dcPartyName}},</th>
+                                    <th style="padding-left: 15px;">{{dcPartyName}},</th>
                                 </tr>
                                 <tr>
-                                    <th style="padding-left: 10px;">{{dcPartyAddress}}</th>
+                                    <th style="padding-left: 15px;">{{dcPartyAddress}}</th>
                                 </tr>
                             </tbody>
                         </table>
                     </td>
                     <td style="width: 35%; height: 100%; ">
-                        <table style="width: 100%; height: 100%;" class="text-start">
+                        <table style="width: 100%; height: 100%;" class="text-start m-0">
                             <tbody>
                                 <tr>
-                                    <th style="width: 30%;">DC No :</th>
-                                    <td style="width: 70%;">{{dcNo}}</td>
+                                    <th style="width: 20%;">GRN No </th>
+                                    <td style="width: 80%;">: {{dcNo}}</td>
                                 </tr>
                                 <tr>
-                                    <th style="width: 30%;">Dc Date :</th>
-                                    <td style="width: 70%;">{{dcDate}}</td>
-                                </tr>
-                                
-                            </tbody>
-                        </table>
-                    </td>
-                    <td style="width: 35%; height: 100%; ">
-                        <table style="width: 100%; height: 100%;" class="text-start">
-                            <tbody>
-                                <tr>
-                                    <th style="width: 30%;">DC No :</th>
-                                    <td style="width: 70%;">{{dcNo}}</td>
+                                    <th style="width: 20%;">GRN Date </th>
+                                    <td style="width: 80%;">: {{dcDate}}</td>
                                 </tr>
                                 <tr>
-                                    <th style="width: 30%;">Dc Date :</th>
-                                    <td style="width: 70%;">{{dcDate}}</td>
+                                    <th style="width: 30%;">Party DC No </th>
+                                    <td style="width: 70%;">: {{partyRefNo}}</td>
+                                </tr>
+                                <tr>
+                                    <th style="width: 40%;">Party Dc Date </th>
+                                    <td style="width: 60%;">: {{partyRefDate}}</td>
                                 </tr>
                                 
                             </tbody>
@@ -170,7 +163,7 @@
                             <tbody>
                                 <tr>
                                     <td class="text-start">
-                                        For {{-Company Name-}}
+                                        For {{Company Name}}
                                         <br>
                                         <br>
                                         <br>
@@ -208,8 +201,9 @@
         <tbody class="table table-bordered border border-secondary align-middle" style="padding: 5px;">
             <tr>
                 <th style="padding: 0.50rem; vertical-align: top; border: 1px solid #6c757d ;" width="5%" class="text-center">SiNo</th>
-                <th style="padding: 0.50rem; vertical-align: top; border: 1px solid #6c757d ;" width="75%" class="text-center">Item Description</th>
-                <th style="padding: 0.50rem; vertical-align: top; border: 1px solid #6c757d ;" style="width: 20%;" class="text-center">Remarks</th>
+                <th style="padding: 0.50rem; vertical-align: top; border: 1px solid #6c757d ;" width="55%" class="text-center">Item Description</th>
+                <th style="padding: 0.50rem; vertical-align: top; border: 1px solid #6c757d ;" width="20%" class="text-center">Our DC Ref.</th>
+                <th style="padding: 0.50rem; vertical-align: top; border: 1px solid #6c757d ;" width="20%" class="text-center">Remarks</th>
             </tr>
 
             {{dcPartyItems}}

@@ -32,7 +32,7 @@ export const GrnListContent = createContext(null);
 const GrnList = () => {
 
     const employeeRole = useEmployee()
-    const { loggedEmp } = employeeRole
+    const { loggedEmp, allowedPlants } = employeeRole
     const [printState, setPrintState] = useState(false)
     const [selectedRows, setSelectedRows] = useState([]);
     const [grnEditOpen, setGrnEditOpen] = useState(false);
@@ -199,11 +199,11 @@ const GrnList = () => {
 
     const Columns = [
         { field: 'id', headerName: 'Si. No', width: 100, renderCell: (params) => params.api.getAllRowIds().indexOf(params.id) + 1, headerAlign: "center", align: "center", },
-        // ...(employeeRole && employeeRole.employee !== "viewer" ? [{ field: 'button', headerName: 'Edit', headerAlign: "center", align: "center", width: 90, renderCell: (params) => <Button onClick={() => { setSelectedRows(params.row); setGrnEditOpen(true) }}><Edit color='success' /></Button> }] : []),
+         ...(employeeRole && employeeRole.employee !== "viewer" ? [{ field: 'button', headerName: 'Edit', headerAlign: "center", align: "center", width: 90, renderCell: (params) => <Button onClick={() => { setSelectedRows(params.row); setGrnEditOpen(true) }}><Edit color='success' /></Button> }] : []),
         { field: 'grnNo', headerName: 'Grn No', width: 200, headerAlign: "center", align: "center", },
-        { field: 'grnDate', headerName: 'Grn Date', width: 200, headerAlign: "center", align: "center", },
+        { field: 'grnDate', headerName: 'Grn Date', width: 200, headerAlign: "center", align: "center", renderCell: (params) => dayjs(params.row.grnDate).format("DD-MM-YYYY") },
         { field: 'grnPartyName', headerName: 'Party Name', width: 300, headerAlign: "center", align: "center", },
-        { field: 'printButton', headerName: 'Print', headerAlign: "center", align: "center", width: 100, renderCell: (params) => <Button onClick={() => { setSelectedRows(params.row); setGrnPrintOpen(true) }}><PrintRounded onClick={() => setPrintState(true)} color='success' /></Button> }
+        { field: 'printButton', headerName: 'Print', headerAlign: "center", align: "center", width: 100, renderCell: (params) => <Button component={Link} to={`${process.env.REACT_APP_PORT}/grnCertificates/${params.row.grnNo}.pdf`} target='_blank'><PrintRounded  color='success' /></Button> }
     ]
 
 
@@ -215,16 +215,14 @@ const GrnList = () => {
     const [itemPlantList, setItemPlantList] = useState([])
     const ItemFetch = async () => {
         try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/itemAdd/getAllItemAdds`
-            );
+            const response = await axios.post(
+                `${process.env.REACT_APP_PORT}/itemAdd/getItemByPlant`, { allowedPlants: allowedPlants }
+              );
             console.log(response.data.result)
-            const plantItems = response.data.result.filter(item => (loggedEmp.plantDetails.map(plant => plant.plantName).includes(item.itemPlant)))
-            const DcItems = plantItems.filter(item => item.dcStatus === "1")
+           
+            const DcItems = response.data.result.filter(item => item.dcStatus === "1")
             console.log(DcItems)
             setItemPlantList(DcItems);
-
-
 
         } catch (err) {
             console.log(err);
@@ -234,10 +232,6 @@ const GrnList = () => {
         ItemFetch()
     }, []);
 
-
-
-    
-    
 
     const [plantList, setPlantList] = useState([])
 
@@ -266,9 +260,9 @@ const GrnList = () => {
 
     const FetchData = async () => {
         try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/vendor/getAllVendors`
-            );
+            const response = await axios.post(
+                `${process.env.REACT_APP_PORT}/vendor/getVendorByPlants`, { allowedPlants: allowedPlants }
+              );
             setVendorFullList(response.data.result);
             setVendorTypeList(response.data.result)
             // setFilteredData(response.data.result);
@@ -353,34 +347,13 @@ const GrnList = () => {
 
     ]
 
-    const [vendorDataList, setVendorDataList] = useState([])
-    const vendorFetchData = async () => {
-        try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/vendor/getAllVendors`
-            );
-            setVendorDataList(response.data.result);
-
-        } catch (err) {
-            console.log(err);
-        }
-    };
-    useEffect(() => {
-        vendorFetchData();
-    }, []);
-
-
-
-
-
-
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         if (name === "vendorType") {
             if (value === "all") {
                 setVendorTypeList(vendorFullList)
             } else {
-                const vendorType = vendorDataList.filter((item) => (item[value] === "1"))
+                const vendorType = setVendorFullList.filter((item) => (item[value] === "1"))
                 setVendorTypeList(vendorType)
             }
         }
@@ -414,10 +387,6 @@ const GrnList = () => {
         <div className='px-5 pt-3'>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <form>
-
-
-
-
                     <div className='row mb-2'>
 
 
@@ -477,7 +446,7 @@ const GrnList = () => {
                                 </div>
                                 <div className='col '>
 
-                                    <TextField label="Default Location "
+                                    <TextField label="Primary Location "
                                         id="dcDepartmentId"
                                         select
                                         defaultValue="all"
@@ -669,7 +638,7 @@ const GrnList = () => {
                                 </div>
 
                                 <GrnListContent.Provider
-                                    value={{ grnEditOpen, setGrnEditOpen, selectedRows, grnListFetchData, itemPlantList ,grnDataDcList}}
+                                    value={{ grnEditOpen, setGrnEditOpen, selectedRows, grnListFetchData, itemPlantList ,grnDataDcList, allowedPlants}}
                                 >
                                     <GrnEdit />
                                 </GrnListContent.Provider>

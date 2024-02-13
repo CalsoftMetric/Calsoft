@@ -34,7 +34,7 @@ dayjs.extend(isSameOrAfter)
 
 const CalList = () => {
     const employeeRole = useEmployee()
-    const { loggedEmp } = employeeRole
+    const { loggedEmp, allowedPlants } = employeeRole
     const [itemAddList, setItemAddList] = useState([])
     const [itemMasters, setItemMasters] = useState([])
     const [IMTENos, setIMTENos] = useState([])
@@ -69,15 +69,14 @@ const CalList = () => {
 
     const itemMasterFetchData = async () => {
         try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/itemAdd/getAllItemAdds`
-
-            );
-            const plantItems = response.data.result.filter(item => (loggedEmp.plantDetails.map(plant => plant.plantName).includes(item.itemPlant) && item.itemCalibrationSource === "inhouse"))
-            const masterItems = plantItems.filter((item) => item.isItemMaster === "1")
-            setItemAddList(plantItems);
+            const response = await axios.post(
+                `${process.env.REACT_APP_PORT}/itemAdd/getItemByPlant`, { allowedPlants: allowedPlants }
+              );
+            
+            const masterItems = response.data.result.filter((item) => item.isItemMaster === "1")
+            setItemAddList(response.data.result);
             setItemMasters(masterItems)
-            console.log(plantItems)
+        
         } catch (err) {
             console.log(err);
         }
@@ -305,7 +304,7 @@ const CalList = () => {
         { field: 'calItemCalDate', headerName: 'Calibration On', width: 200, valueGetter: (params) => dayjs(params.row.calItemCalDate).format('DD-MM-YYYY'), headerAlign: "center", align: "center", },
         { field: 'calItemDueDate', headerName: 'Next Due On', width: 200, valueGetter: (params) => dayjs(params.row.calItemDueDate).format('DD-MM-YYYY'), headerAlign: "center", align: "center", },
         { field: 'calStatus', headerName: 'Cal status', width: 200, headerAlign: "center", align: "center", },
-        { field: 'printButton', headerName: 'Print', headerAlign: "center", align: "center", width: 100, renderCell: (params) => <Button onClick={() => { setSelectedRows(params.row); setPrintState(true) }}><PrintRounded color='success' /></Button> }
+        { field: 'printButton', headerName: 'Print', headerAlign: "center", align: "center", width: 100, renderCell: (params) => <Button component={Link} to={`${process.env.REACT_APP_PORT}/calCertificates/${params.row.calCertificateNo}.pdf`} target='_blank'><PrintRounded color='success' /></Button> }
 
 
 
@@ -497,7 +496,7 @@ const CalList = () => {
                                     </TextField>
                                 </div>
                                 <div className='col '>
-                                    <TextField label="Default Location "
+                                    <TextField label="Primary Location "
                                         id="itemDepartmentId"
                                         select
                                         defaultValue="all"
@@ -606,9 +605,7 @@ const CalList = () => {
                                     disableRowSelectionOnClick
                                     pageSizeOptions={[12]}
                                 />
-
                             </Box>
-
                         </div>
                         <div className='row'>
                             <div className='col d-flex '>

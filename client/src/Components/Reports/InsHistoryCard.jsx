@@ -6,7 +6,7 @@ import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { useState, useEffect, useContext, createContext } from "react";
 import axios from 'axios';
 import dayjs from 'dayjs';
-import { DisabledByDefault, FileOpen, Pages, PrintRounded } from '@mui/icons-material';
+import { DisabledByDefault, FileCopy, FileOpen, Pages, PrintRounded } from '@mui/icons-material';
 import { useEmployee } from "../../App";
 import { ArrowBack, Error, HomeMax, House, Mail, MailLock, } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
@@ -32,7 +32,7 @@ function InsHistoryCard() {
     const [printState, setPrintState] = useState(false)
 
     const empRole = useEmployee()
-    const { loggedEmp } = empRole
+    const { loggedEmp, allowedPlants } = empRole
 
 
 
@@ -54,7 +54,6 @@ function InsHistoryCard() {
     useEffect(() => {
         formatFetchData();
     }, []);
-
     const [companyList, setCompanyList] = useState([])
 
     const companyFetch = async () => {
@@ -122,14 +121,11 @@ function InsHistoryCard() {
 
     const itemFetch = async () => {
         try {
-            const response = await axios.get(`${process.env.REACT_APP_PORT}/itemAdd/getAllItemAdds`);
+            const response = await axios.post(
+                `${process.env.REACT_APP_PORT}/itemAdd/getItemByPlant`, { allowedPlants: allowedPlants }
+              );
             console.log(response.data.result)
-
-            const plantDatas = response.data.result.filter(item =>
-                loggedEmp.plantDetails.some(plant => plant.plantName === item.itemPlant)
-            );
-            console.log(plantDatas)
-            setItemList(plantDatas);
+            setItemList(response.data.result);
         } catch (error) {
             console.error('Error fetching data:', error);
         }
@@ -137,7 +133,7 @@ function InsHistoryCard() {
     useEffect(() => {
         itemFetch()
     }, [])
-    
+
 
     console.log(itemList)
     const [itemFilters, setItemFilters] = useState({
@@ -147,53 +143,56 @@ function InsHistoryCard() {
         itemIMTENo: "Select"
     })
 
-
+    // const sortedFilterNameList = itemListDistNames.itemName.sort();
+    
     const handleFilters = (e) => {
         const { name, value } = e.target;
         setItemFilters(prev => ({ ...prev, [name]: value }))
 
-        
-       
-            if (name === "itemPlant") {
 
-                const dep = loggedEmp.plantDetails.filter(plant => plant.plantName === value);
-                const plantDatas = itemList.filter(item => item.itemPlant === value)
-                console.log(itemList)
-                setSelectedPlantDatas(plantDatas)
-                console.log(plantDatas)
-                const nameList = [...new Set(plantDatas.map(item => item.itemDepartment))]
-                console.log(dep)
-                setPlantDepartments(nameList)
-                setItemFilters(prev=> ({...prev, itemDepartment: "Select", itemName: "Select", itemIMTENo: "Select"}))
-            }
-            if (name === "itemDepartment") {
-                const filterList = selectedPlantDatas.filter(item => item.itemDepartment === value)
-                const nameList = [...new Set(filterList.map(item => item.itemAddMasterName))]
-                setItemListDistNames(nameList)
-                setItemFilters(prev=> ({...prev, itemName: "Select", itemIMTENo: "Select"}))
-                setSelectedDepartmentData(filterList)
-            }
-            if (name === "itemName") {
-                console.log(value)
-                const filterList = selectedDepartmentData.filter(item => item.itemAddMasterName === value)
-                setItemIMTEs(filterList)
-                setItemFilters(prev=> ({...prev, itemIMTENo: "Select"}))
-            }if(name === "itemIMTENo"){
-                const imteNo = selectedDepartmentData.filter(item => item.itemIMTENo === value)
-                setSelectedRow(imteNo)
-                const data = itemHistoryData.filter(item=> item.itemIMTENo === value)
-                console.log(data)
-                setFilteredData(data)
 
-                const master = masters.filter(mas => mas.itemDescription === imteNo[0].itemAddMasterName)
-                setSelectedMasterData(master[0])
-            }
-        
+        if (name === "itemPlant") {
+
+            const dep = loggedEmp.plantDetails.filter(plant => plant.plantName === value);
+            const plantDatas = itemList.filter(item => item.itemPlant === value)
+            console.log(itemList)
+            setSelectedPlantDatas(plantDatas)
+            console.log(plantDatas)
+            const nameList = [...new Set(plantDatas.map(item => item.itemDepartment))]
+            console.log(dep)
+            setPlantDepartments(nameList)
+            setItemFilters(prev => ({ ...prev, itemDepartment: "Select", itemName: "Select", itemIMTENo: "Select" }))
+        }
+        if (name === "itemDepartment") {
+            const filterList = selectedPlantDatas.filter(item => item.itemDepartment === value)
+            const nameList = [...new Set(filterList.map(item => item.itemAddMasterName))].sort()
+            setItemListDistNames(nameList)
+
+            setItemFilters(prev => ({ ...prev, itemName: "Select", itemIMTENo: "Select" }))
+            setSelectedDepartmentData(filterList)
+        }
+        if (name === "itemName") {
+            console.log(value)
+            const filterList = selectedDepartmentData.filter(item => item.itemAddMasterName === value)
+            setItemIMTEs(filterList)
+            setItemFilters(prev => ({ ...prev, itemIMTENo: "Select" }))
+        } if (name === "itemIMTENo") {
+            const imteNo = selectedDepartmentData.filter(item => item.itemIMTENo === value)
+            setSelectedRow(imteNo)
+            const data = itemHistoryData.filter(item => item.itemIMTENo === value)
+            console.log(data)
+            setFilteredData(data)
+
+            const master = masters.filter(mas => mas.itemDescription === imteNo[0].itemAddMasterName)
+            setSelectedMasterData(master[0])
+        }
+
 
 
     }
 
     console.log(selectedMasterData)
+    console.log(selectedRow)
 
     const [itemHistoryData, setItemHistoryData] = useState([])
 
@@ -202,8 +201,6 @@ function InsHistoryCard() {
             try {
                 const response = await axios.get(`${process.env.REACT_APP_PORT}/itemHistory/getAllItemHistory`);
                 setItemHistoryData(response.data.result)
-                
-
                 const uniqueInstrumentNames = Array.from(new Set(response.data.result.map(item => item.itemAddMasterName)));
                 setDistItemNames(uniqueInstrumentNames);
             } catch (error) {
@@ -214,24 +211,11 @@ function InsHistoryCard() {
         fetchData();
     }, []);
 
-
-
-
-
-
-
-
     console.log(itemCalList)
     console.log(selectedIMTEs)
 
-
-
-
     console.log(selectedRow)
-    console.log(selectedRow.acceptanceCriteria)
-
-
-
+    
     const filterByDate = (items, fromDate, toDate) => {
         return items.filter((row) => {
             const calDate = dayjs(row.calItemCalDate);
@@ -244,43 +228,43 @@ function InsHistoryCard() {
 
     const filteredSelectedIMTEs = filterByDate(selectedIMTEs, fromDate, toDate);
 
-
+    console.log(selectedRow)
 
     const historyColumns = [
         { field: 'id', headerName: 'Si.No', width: 50, align: "center", renderCell: (params) => params.api.getAllRowIds().indexOf(params.id) + 1 },
-        { field: 'certificateView', headerName: 'Certificate', width: 100, align: "center", renderCell: (params) => <IconButton size="small" component={Link} target="_blank" to={`${process.env.REACT_APP_PORT}/itemCertificates/${params.row.itemCertificateName}`} ><FileOpen /></IconButton> },
+        {
+            field: 'certificateView', headerName: 'Certificate', width: 100, align: "center", renderCell: (params) =>
+                params.row.itemCalibrationSource === "inhouse" ?
+                    <IconButton size="small" component={Link} target="_blank" to={`${process.env.REACT_APP_PORT}/calCertificates/${params.row.itemCertificateNo}.pdf`} ><FileCopy /></IconButton> :
+                    <IconButton size="small" component={Link} target="_blank" to={`${process.env.REACT_APP_PORT}/itemCertificates/${params.row.itemCertificateName}`} ><FileOpen /></IconButton>
+        },
         { field: 'itemCalDate', headerName: 'Calibration Date', width: 150, align: "center", valueGetter: (params) => dayjs(params.row.itemCalDate).format('DD-MM-YYYY') },
         { field: 'itemDueDate', headerName: 'Calibration Due', width: 150, align: "center", valueGetter: (params) => dayjs(params.row.itemDueDate).format('DD-MM-YYYY') },
         { field: 'itemCalStatus', headerName: 'Calibration Status', width: 150, align: "center", },
         // { field: 'itemCertStatus', headerName: 'Certificate Status', width: 150, align: "center"},
-        { field: 'itemCertificateNo', headerName: 'Certificate No', width: 150, align: "center"},
-        
-        {field: 'observedSize', headerName: "Observed Size", width: 180, align: "center",
-                renderCell: (params) => (
-                    
-                    <div>
-                        
-                        {params.row.acceptanceCriteria.map((item, index) => (
-                            
-                           
-                            <span key={index}>
-                                {item}<br />
-                               
-                              
-                            </span>
-                        
-                        ))}
-                    </div>
-                ),
-            },
+        { field: 'itemCertificateNo', headerName: 'Certificate No', width: 180, align: "center" },
+
+        {
+            field: 'observedSize', headerName: "Observed Size", width: 180, align: "center",
+            renderCell: (params) => (
+
+                <div>
+                    {params.row.acceptanceCriteria.map((item, index) => (
+                        <span key={index}>
+                            {item}<br />
+                        </span>
+                    ))}
+                </div>
+            ),
+        },
         { field: 'itemCalibratedAt', headerName: 'Calibrated At', width: 150, align: "center" },
         { field: 'itemCalibratedBy', headerName: 'Calibrated By', width: 150, align: "center" },
         { field: 'itemCalApprovedBy', headerName: 'Approved By', width: 150, align: "center" },
 
     ];
 
-   
-    
+
+
 
     return (
         <div>
@@ -317,7 +301,7 @@ function InsHistoryCard() {
                                             ))}
                                         </TextField>
 
-                                        <TextField label="Default Location "
+                                        <TextField label="Primary Location "
                                             id="itemDepartmentId"
                                             className="me-2 col"
                                             select
@@ -406,7 +390,7 @@ function InsHistoryCard() {
 
                             <div className="row g-2">
                                 <div className=" col d-flex justify-content-start">
-                                    
+
                                     {selectedRow[0]?.itemIMTENo && <div>
                                         <div><Button size="small" variant="contained" onClick={() => setPrintState(true)} startIcon={<PrintRounded />}>
                                             Print
@@ -417,8 +401,13 @@ function InsHistoryCard() {
                                 </div>
 
                                 <div className="col d-flex justify-content-end">
-
-                                 
+                                    <div className="me-2"><Button component={Link} to={`${process.env.REACT_APP_PORT}/additionalCertificates/${selectedRow.length > 0 ? selectedRow[0].rdName : ""}`} target="_blank" variant="contained" color="info" size="small">R&R</Button></div>
+                                    <div className="me-2">
+                                        <Button component={Link} to={`${process.env.REACT_APP_PORT}/additionalCertificates/${selectedRow.length > 0 ? selectedRow[0].msaName : ""}`} target="_blank" variant="contained" color="info" size="small">MSA</Button>
+                                    </div>
+                                    <div className="me-2">
+                                        <Button component={Link} to={`${process.env.REACT_APP_PORT}/additionalCertificates/${selectedRow.length > 0 ? selectedRow[0].otherFile : ""}`} target="_blank" variant="contained" color="info" size="small">Drawing</Button>
+                                    </div>
                                     <div className="me-2"><Button component={Link} to={`${process.env.REACT_APP_PORT}/workInstructions/${selectedMasterData.workInsName}`} target="_blank" variant="contained" color="info" size="small">View Instructions</Button></div>
                                     {/* <div className="me-2"><Button variant="contained" color="info" size="small">View Drawing</Button></div>
                                     <div className="me-2"><Button variant="contained" color="info" size="small">View R&R</Button></div>
@@ -493,23 +482,23 @@ function InsHistoryCard() {
                                     }}
                                     elevation={12}>
                                     <div className="col ">
-                                       {selectedRow.length > 0 && selectedRow[0].itemType === "variable" &&  <table className="table table-sm table-bordered text-center align-middle" style={{ fontSize: "small" }}>
+                                        {selectedRow.length > 0 && selectedRow[0].itemType === "variable" && <table className="table table-sm table-bordered text-center align-middle" style={{ fontSize: "small" }}>
                                             <thead>
                                                 <tr >
                                                     <th>Parameter</th>
                                                     <th>Min</th>
                                                     <th>Max</th>
-                                                    
+
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {
-                                                    selectedRow[0].acceptanceCriteria.map(item => (
+                                                    selectedRow.length > 0 && selectedRow[0].acceptanceCriteria.map(item => (
                                                         <tr>
                                                             <td>{item.acParameter || '-'}</td>
                                                             <td>{item.acMinPSError || '-'}</td>
                                                             <td>{item.acMaxPSError || '-'}</td>
-                                                           
+
                                                         </tr>
                                                     ))
                                                 }
@@ -527,7 +516,7 @@ function InsHistoryCard() {
                                             </thead>
                                             <tbody>
                                                 {
-                                                    selectedRow[0].acceptanceCriteria.map(item => (
+                                                    selectedRow.length > 0 && selectedRow[0].acceptanceCriteria.map(item => (
                                                         <tr>
                                                             <td>{item.acParameter || '-'}</td>
                                                             <td>{item.acMinPS || '-'}</td>
@@ -545,17 +534,17 @@ function InsHistoryCard() {
                                                     <th>Parameter</th>
                                                     <th>Min</th>
                                                     <th>Max</th>
-                                                    
+
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {
-                                                    selectedRow[0].acceptanceCriteria.map(item => (
+                                                    selectedRow.length > 0 && selectedRow[0].acceptanceCriteria.map(item => (
                                                         <tr>
                                                             <td>{item.acParameter || '-'}</td>
                                                             <td>{item.acMinPS || '-'}</td>
                                                             <td>{item.acMaxPS || '-'}</td>
-                                                            
+
                                                         </tr>
                                                     ))
                                                 }

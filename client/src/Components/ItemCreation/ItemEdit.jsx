@@ -11,7 +11,7 @@ import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { Link as RouterLink } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Add, Remove, HighlightOffRounded } from '@mui/icons-material';
+import { Add, Remove, HighlightOffRounded, Close, CloudUpload } from '@mui/icons-material';
 import { useEmployee } from '../../App';
 
 
@@ -23,7 +23,8 @@ const ItemEdit = () => {
     console.log(id)
 
 
-    const { loggedEmp } = useEmployee();
+    const { loggedEmp, allowedPlants } = useEmployee();
+    const [addOpenData, setAddOpenData] = useState(false)
 
     // Units Data
     const [units, setUnits] = useState([]);
@@ -85,16 +86,10 @@ const ItemEdit = () => {
 
     const getItemMaster = async () => {
         try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/itemAdd/getAllItemAdds`
+            const response = await axios.post(
+                `${process.env.REACT_APP_PORT}/itemAdd/getItemByPlant`, { allowedPlants: allowedPlants }
             );
-            console.log(response.data)
-            console.log(loggedEmp)
-            //
-            const plantItems = response.data.result.filter(item => loggedEmp.plantDetails.map(plant => plant.plantName).includes(item.itemPlant))
-            const isItemMaster = plantItems.filter(item => item.isItemMaster === "1")
-            console.log("Hi working")
-            console.log(isItemMaster)
+            const isItemMaster = response.data.result.filter(item => item.isItemMaster === "1")
             setIsItemMasterList(isItemMaster);
         } catch (err) {
             console.log(err);
@@ -125,8 +120,75 @@ const ItemEdit = () => {
         itemMasterFetchData();
     }, []);
 
+    const [certMessage, setCertMessage] = useState(null)
 
+    const handleAdditionalCertificate = (event, name) => {
+        const selectedFile = event.target.files[0];
+        if (selectedFile) {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('rdName', itemAddData.itemIMTENo + "R&R");  // Append rdName to the formData
+            try {
+                axios.post(`${process.env.REACT_APP_PORT}/upload/additionalCertificates`, formData)
+                    .then(response => {
+                        setItemAddData((prev) => ({ ...prev, rdName: response.data.name }));
+                        setCertMessage("Additional Certificates Uploaded Successfully");
+                        console.log("Additional Certificates Uploaded Successfully");
+                    })
+                    .catch(error => {
+                        setCertMessage("Error Uploading Certificate");
+                        console.log(error);
+                    });
+            } catch (error) {
+                console.error('Error uploading the file:', error);
+            }
+        }
+    };
+    const handleMSACertificate = (event, name) => {
+        const selectedFile = event.target.files[0];
+        if (selectedFile) {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('msaName', itemAddData.itemIMTENo);  // Append rdName to the formData
+            try {
+                axios.post(`${process.env.REACT_APP_PORT}/upload/msaCertificates`, formData)
+                    .then(response => {
+                        setItemAddData((prev) => ({ ...prev, msaName: response.data.name }));
+                        setCertMessage("MSA Certificates Uploaded Successfully");
+                        console.log(" MSA Certificates Uploaded Successfully");
+                    })
+                    .catch(error => {
+                        setCertMessage("Error Uploading Certificate");
+                        console.log(error);
+                    });
+            } catch (error) {
+                console.error('Error uploading the file:', error);
+            }
+        }
+    };
 
+    const handleOtherFilesCertificate = (event, name) => {
+        const selectedFile = event.target.files[0];
+        if (selectedFile) {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('otherFile', itemAddData.itemIMTENo + "OtherFiles");// Append rdName to the formData
+            try {
+                axios.post(`${process.env.REACT_APP_PORT}/upload/otherFilesCertificates`, formData)
+                    .then(response => {
+                        setItemAddData((prev) => ({ ...prev, otherFile: response.data.name }));
+                        setCertMessage("OtherFiles Certificates Uploaded Successfully");
+                        console.log(" OtherFiles Certificates Uploaded Successfully");
+                    })
+                    .catch(error => {
+                        setCertMessage("Error Uploading Certificate");
+                        console.log(error);
+                    });
+            } catch (error) {
+                console.error('Error uploading the file:', error);
+            }
+        }
+    };
 
 
 
@@ -152,8 +214,8 @@ const ItemEdit = () => {
 
     const vendorListFetch = async () => {
         try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/vendor/getAllVendors`
+            const response = await axios.post(
+                `${process.env.REACT_APP_PORT}/vendor/getVendorByPlants`, { allowedPlants: allowedPlants }
             );
             const vendorList = response.data.result
             const customerList = vendorList.filter((item) => item.customer === "1" || item.supplier === "1");
@@ -180,12 +242,13 @@ const ItemEdit = () => {
     //
 
     const initialItemAddData = {
-        
+
         selectedItemMaster: [],
         isItemMaster: "",
         itemAddMasterName: "",
         itemPlant: "",
         itemIMTENo: "",
+        itemSAPNo: "",
         itemImage: "",
         itemType: "",
         itemRangeSize: "",
@@ -200,7 +263,7 @@ const ItemEdit = () => {
         itemDepartment: "",
 
         itemArea: "N/A",
-        itemPlaceOfUsage: "N/A",
+        itemPlaceOfUsage: "",
         itemCalFreInMonths: "",
         itemCalAlertDays: "",
         itemCalibrationSource: "",
@@ -236,16 +299,29 @@ const ItemEdit = () => {
         itemUncertainity: "",
         itemUncertainityUnit: "",
         createdBy: "",
-        updatedBy: ""
+        updatedBy: "",
+        calibrationCost: "",
+        gaugeUsage: "",
+        lifealertDays: "",
+        purchaseRefNo: "",
+        purchaseDate: "",
+        purchaseCost: "",
+        specialRemark: "",
+        drawingIssueNo: "",
+        drawingNo: "",
+        rdName: "",
+        msaName: "",
+        otherFile: "",
     }
 
 
     const [itemAddData, setItemAddData] = useState({
-        
+
         selectedItemMaster: [],
         isItemMaster: "",
         itemAddMasterName: "",
         itemIMTENo: "",
+        itemSAPNo: "",
         itemImage: "",
         itemType: "",
         itemRangeSize: "",
@@ -260,7 +336,7 @@ const ItemEdit = () => {
         itemDepartment: "",
         itemCurrentLocation: "",
         itemArea: "N/A",
-        itemPlaceOfUsage: "N/A",
+        itemPlaceOfUsage: "",
         itemCalFreInMonths: "",
         itemCalAlertDays: "",
         itemCalibrationSource: "",
@@ -298,7 +374,19 @@ const ItemEdit = () => {
         itemPlant: "",
         itemCreatedBy: loggedEmp._id,
         itemLastModifiedBy: loggedEmp._id,
-        itemLastModifiedAt: dayjs().format("YYYY-MM-DD")
+        itemLastModifiedAt: dayjs().format("YYYY-MM-DD"),
+        calibrationCost: "",
+        gaugeUsage: "",
+        lifealertDays: "",
+        purchaseRefNo: "",
+        purchaseDate: "",
+        purchaseCost: "",
+        specialRemark: "",
+        drawingIssueNo: "",
+        drawingNo: "",
+        rdName: "",
+        msaName: "",
+        otherFile: "",
     })
 
 
@@ -311,10 +399,11 @@ const ItemEdit = () => {
             console.log(itemData)
             setItemAddData((prev) => ({
                 ...prev,
-               
+
                 selectedItemMaster: itemData.selectedItemMaster,
                 itemAddMasterName: itemData.itemAddMasterName,
                 itemIMTENo: itemData.itemIMTENo,
+                itemSAPNo: itemData.itemSAPNo,
                 isItemMaster: itemData.isItemMaster,
                 itemImage: itemData.itemImage,
                 itemPlant: itemData.itemPlant,
@@ -329,7 +418,7 @@ const ItemEdit = () => {
                 itemStatus: itemData.itemStatus,
                 itemReceiptDate: itemData.itemReceiptDate,
                 itemDepartment: itemData.itemDepartment,
-               
+
                 itemArea: itemData.itemArea,
                 itemPlaceOfUsage: itemData.itemPlaceOfUsage,
                 itemCalFreInMonths: itemData.itemCalFreInMonths,
@@ -350,7 +439,19 @@ const ItemEdit = () => {
                 itemUncertainity: itemData.itemUncertainity,
                 itemPrevCalData: itemData.itemPrevCalData,
                 itemUncertainityUnit: itemData.itemUncertainityUnit,
-                itemCertificateNo: itemData.itemCertificateNo
+                itemCertificateNo: itemData.itemCertificateNo,
+                calibrationCost: itemData.calibrationCost,
+                gaugeUsage: itemData.gaugeUsage,
+                lifealertDays: itemData.lifealertDays,
+                purchaseRefNo: itemData.purchaseRefNo,
+                purchaseDate: itemData.purchaseDate,
+                purchaseCost: itemData.purchaseCost,
+                specialRemark: itemData.specialRemark,
+                drawingIssueNo: itemData.drawingIssueNo,
+                drawingNo: itemData.drawingNo,
+                rdName: itemData.rdName,
+                msaName: itemData.msaName,
+                otherFile: itemData.otherFile,
 
 
                 // itemCreatedBy: itemData.itemCreatedBy
@@ -388,40 +489,22 @@ const ItemEdit = () => {
         whiteSpace: 'nowrap',
         width: 1,
     });
-
-
-
     useEffect(() => {
         getItemDataById();
     }, [])
-
-
-
-
-
-
-    
-
-
     const handleItemAddChange = (e) => {
 
         const { name, value, checked } = e.target;
         if (name === "itemRangeSizeUnit") {
             setItemAddData((prev) => ({ ...prev, [name]: value, acceptanceCriteria: [{ acAccuracyUnit: value, acRangeSizeUnit: value }] }))
         }
-
-
         if (name === "itemDepartment") {
-
             setItemAddData((prev) => ({
                 ...prev,
                 [name]: value,
                 itemCurrentLocation: value, // Ensure 'value' is correct here
             }));
         }
-     
-
-      
         if (name === "itemItemMasterIMTENo") {
             const updatedSelection = isItemMasterList.filter(item => value.some(selectedItem => selectedItem.itemIMTENo === item.itemIMTENo));
             setItemAddData((prev) => ({ ...prev, itemItemMasterIMTENo: updatedSelection }));
@@ -439,7 +522,6 @@ const ItemEdit = () => {
                 console.log("oem")
                 setItemAddData((prev) => ({ ...prev, itemItemMasterIMTENo: [], itemSupplier: [] }));
             }
-
 
         }
         if (name === "itemCalDate") {
@@ -464,8 +546,6 @@ const ItemEdit = () => {
             setItemAddData((prev) => ({ ...prev, itemOEM: typeof value === 'string' ? value.split(',') : value }));
         }
 
-
-
         setItemAddData((prev) => ({ ...prev, [name]: value }));
 
         if (name === "isItemMaster") {
@@ -482,9 +562,6 @@ const ItemEdit = () => {
             console.log("working")
         }
     }
-
-
-
     useEffect(() => {
         setItemAddData((prev) => ({
             ...prev,
@@ -492,9 +569,6 @@ const ItemEdit = () => {
             itemCurrentLocation: itemAddData.itemDepartment, // Ensure 'value' is correct here
         }));
     }, [itemAddData.itemDepartment])
-
-
-
     const handleItemDue = (e) => {
         const { name, value } = e.target;
         if (name === "calibrationDate") {
@@ -502,7 +576,6 @@ const ItemEdit = () => {
         }
 
     }
-
     let dueDates = new Date();
     const frequencyMonths = 6;
     let newDueDate = new Date(dueDates);
@@ -525,14 +598,9 @@ const ItemEdit = () => {
         dueDate = new Date(currentYear, currentMonth + calibrationFrequencyMonths + 1, 0);
     }
     console.log(dueDate)
-
-
-
-
     console.log(itemAddData)
     const [calibrationPointsData, setCalibrationPointsData] = useState([])
     const itemMasterById = () => {
-
         const master = itemMasterDataList.filter(mas => mas.itemDescription === itemAddData.itemAddMasterName)
         console.log(master)
         if (master.length > 0) {
@@ -549,26 +617,23 @@ const ItemEdit = () => {
             setCalibrationPointsData(calibrationPoints)
         }
     };
-
-
     useEffect(() => {
         if (itemAddData.itemAddMasterName) {
             itemMasterById();
         }
     }, [itemAddData.itemAddMasterName]);
-
-
-
-
     const [partData, setPartData] = useState([])
+    const [plantWisePart, setPlantWisePart] = useState([])
+
     const getPartList = async () => {
         try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/part/getAllParts`
+            const response = await axios.post(
+                `${process.env.REACT_APP_PORT}/part/getPartsByPlant`, { allowedPlants: allowedPlants }
             );
+
             console.log(response.data)
             setPartData(response.data.result)
-
+            setPlantWisePart(response.data.result)
 
         } catch (err) {
             console.log(err);
@@ -579,6 +644,10 @@ const ItemEdit = () => {
         getPartList();
     }, []);
 
+    useEffect(()=> {
+        const filteredPart = partData.filter(part => part.partPlant === itemAddData.itemPlant)
+        setPlantWisePart(filteredPart)
+    }, [itemAddData.itemPlant])
 
     const [imteList, setImteList] = useState([])
     const getImteList = async () => {
@@ -623,8 +692,6 @@ const ItemEdit = () => {
             }]
         }))
     }
-
-
     const changeACValue = (index, name, value) => {
         console.log('Received:', { index, name, value });
 
@@ -710,7 +777,7 @@ const ItemEdit = () => {
             setItemAddData(initialItemAddData)
             setTimeout(() => {
                 navigate('/itemList');
-            }, 3000);
+            }, 500);
 
 
         } catch (err) {
@@ -743,17 +810,18 @@ const ItemEdit = () => {
 
     const handleCertificateUpload = (event) => {
         const selectedFile = event.target.files[0];
+        console.log(selectedFile)
         if (selectedFile) {
             console.log("working")
-            
+
             const formData = new FormData();
             formData.append('file', selectedFile);
             try {
                 axios.post(`${process.env.REACT_APP_PORT}/upload/itemCertificates`, formData)
                     .then(response => {
                         setUploadMessage(response.data.message)
-                        console.log(response);
-                        setItemAddData((prev) => ({ ...prev, itemCertificateName: response.data.name}));
+                        console.log(response.data);
+                        setItemAddData((prev) => ({ ...prev, itemCertificateName: response.data.name }));
                     })
                     .catch(error => {
                         setUploadMessage("")
@@ -767,7 +835,6 @@ const ItemEdit = () => {
         }
     };
 
-
     const handleSnackClose = (event, reason) => {
         if (reason === 'clickaway') {
             return;
@@ -780,15 +847,6 @@ const ItemEdit = () => {
         setItemAddData((prev) => ({ ...prev, itemCertificateName: "" }));
         setUploadMessage(null)
     }
-
-
-
-
-
-
-
-
-
     const calculateResultDate = (newValue) => {
         const itemCalDate = dayjs(newValue).format('YYYY-MM-DD')
         const parsedDate = dayjs(itemCalDate);
@@ -801,11 +859,26 @@ const ItemEdit = () => {
             }));
         }
     };
+    const [department, setDepartment] = useState([])
+    const DepFetch = async () => {
+        try {
+            const response = await axios.get(
+                `${process.env.REACT_APP_PORT}/department/getAllDepartments`
+            );
+            // const defaultDepartment = response.data.result.filter((dep) => dep.defaultdep === "yes")
+            setDepartment(response.data.result);
 
-    const [plantDepartments, setPlantDepartments] = useState([])
-
+            console.log(response.data)
+        } catch (err) {
+            console.log(err);
+        }
+    };
+    //get Designations
     useEffect(() => {
-
+        DepFetch()
+    }, []);
+    const [plantDepartments, setPlantDepartments] = useState([])
+    useEffect(() => {
         const filteredPlants = loggedEmp.plantDetails.filter(plant => plant.plantName === itemAddData.itemPlant);
         console.log(filteredPlants)
         if (filteredPlants.length > 0) {
@@ -815,9 +888,6 @@ const ItemEdit = () => {
         }
 
     }, [itemAddData.itemPlant])
-
-
-
     return (
         <div style={{ margin: "2rem", backgroundColor: "#f5f5f5" }}>
             <form>
@@ -843,7 +913,7 @@ const ItemEdit = () => {
                                 </TextField>
                             </div> */}
 
-                            <div className="col-6">
+                            <div className="col-4">
                                 <Autocomplete
                                     disablePortal
                                     id="itemIMTENoId"
@@ -857,29 +927,24 @@ const ItemEdit = () => {
 
                                 />
                             </div>
+                            <div className="col-3">
+                                <TextField size='small' variant='outlined' value={itemAddData.itemSAPNo} label="SAP NO" onChange={handleItemAddChange} name='itemSAPNo' id='itemSAPNoId' fullWidth />
+                            </div>
                             <div className="col">
                                 <FormControlLabel
                                     control={<Checkbox name='isItemMaster' checked={itemAddData.isItemMaster === "1"} onChange={handleItemAddChange} />}
                                     label="Use as Master"
                                 />
-
                             </div>
-
-
                         </div>
-                        <div className="col-lg-2 " >
+                        <div className="col-lg-3 " >
                             <Typography variant='h3' style={{ height: "50%", margin: "13% 0" }} className='text-center'>Item Edit</Typography>
                         </div>
-
-                        <div className="col-lg-5 d-flex justify-content-end">
+                        <div className="col-lg-4 d-flex justify-content-end">
                             {itemAddData.itemImage && <Card elevation={12} sx={{ width: "110px", height: "110px" }}>
-
                                 <img src={`${process.env.REACT_APP_PORT}/itemMasterImages/${itemAddData.itemImage}`} style={{ width: "100%", height: "100%" }} />
-
                             </Card>}
                         </div>
-
-
                     </Paper>
                     <div className="row ">
                         <div className="col">
@@ -888,11 +953,9 @@ const ItemEdit = () => {
                                 <div className="row g-2 mb-2">
                                     <div className="col-lg-4">
                                         <TextField size='small' select variant='outlined' onChange={handleItemAddChange} label="Item Type" name='itemType' fullWidth value={itemAddData.itemType}>
-
                                             <MenuItem value="attribute">Attribute</MenuItem>
                                             <MenuItem value="variable">Variable</MenuItem>
                                             <MenuItem value="referenceStandard">Reference Standard</MenuItem>
-
                                         </TextField>
                                     </div>
                                     <div className='col-lg-8 d-flex justify-content-between'>
@@ -905,27 +968,20 @@ const ItemEdit = () => {
                                                 <MenuItem key={index} value={unit.unitName}>{unit.unitName}</MenuItem>
                                             ))}
                                         </TextField>
-
-
-
-
                                     </div>
                                 </div>
                                 <div className="row g-2">
                                     <div className="col-lg-12">
                                         <TextField size='small' variant='outlined' label="MFR.Si.No." onChange={handleItemAddChange} name='itemMFRNo' value={itemAddData.itemMFRNo} id='itemMFRNoId' fullWidth />
                                     </div>
-                                    <div className='col-lg-8 d-flex justify-content-between'>
+                                    <div className='col-md-12 d-flex justify-content-between'>
                                         {itemAddData.itemType === "variable" && <TextField size='small' variant='outlined' name='itemLC' onChange={handleItemAddChange} id="itemLCId" value={itemAddData.itemLC} label="Least Count" fullWidth />}
-
-
                                         {itemAddData.itemType === "variable" && <TextField select size='small' variant='outlined' label="Unit" name='itemLCUnit' onChange={handleItemAddChange} value={itemAddData.itemLCUnit} style={{ width: "100%" }} >
                                             <MenuItem value=""><em>None</em></MenuItem>
                                             {units.map((unit, index) => (
                                                 <MenuItem key={index} value={unit.unitName}>{unit.unitName}</MenuItem>
                                             ))}
                                         </TextField>}
-
                                     </div>
                                     <div className="row g-1">
                                         <div className="col-lg-12 me-1">
@@ -960,7 +1016,7 @@ const ItemEdit = () => {
                                                     setItemAddData((prev) => ({ ...prev, itemReceiptDate: newValue.format("DD-MM-YYYY") }))
                                                 }
                                                 label="Item Receipt Date"
-                                                slotProps={{ textField: { size: 'small' } }}
+                                                slotProps={{ textField: { size: 'small', fullWidth: true } }}
                                                 format="DD-MM-YYYY" />
                                         </div>
                                     </div>
@@ -971,7 +1027,7 @@ const ItemEdit = () => {
                                     Select Location
                                 </Typography>
                                 <div className="row g-2 mt-0 mb-2">
-                                    <div className="col-md-6">
+                                    <div className="col-md-4">
                                         <TextField
 
                                             value={itemAddData.itemPlant} onChange={handleItemAddChange} size='small' select fullWidth variant='outlined' label="Select Plant" name='itemPlant' id='itemPlantId'>
@@ -981,10 +1037,17 @@ const ItemEdit = () => {
                                             ))}
                                         </TextField>
                                     </div>
-                                    <div className="col-md-6 ">
-                                        <TextField value={itemAddData.itemDepartment} onChange={handleItemAddChange} size='small' select fullWidth variant='outlined' label="Department" name='itemDepartment' id='itemDepartmentId'>
+                                    <div className="col-md-4">
+                                        <TextField value={itemAddData.itemDepartment} onChange={handleItemAddChange} size='small' select fullWidth variant='outlined' label="Primary Location" name='itemDepartment' id='itemDepartmentId'>
                                             {plantDepartments && plantDepartments.map((item, index) => (
                                                 <MenuItem key={index} value={item}>{item}</MenuItem>
+                                            ))}
+                                        </TextField>
+                                    </div>
+                                    <div className="col-md-4">
+                                        <TextField value={itemAddData.itemPlaceOfUsage} onChange={handleItemAddChange} size='small' select fullWidth variant='outlined' label="Secondary Location" name='itemPlaceOfUsage' id='itemPlaceOfUsageId'>
+                                            {department.map((item, index) => (
+                                                <MenuItem key={index} value={item.department}>{item.department}</MenuItem>
                                             ))}
                                         </TextField>
                                     </div>
@@ -1024,7 +1087,7 @@ const ItemEdit = () => {
 
                                     </TextField>
                                 </div>
-                                <div className='col-lg-12'>
+                                <div className='col-md-6'>
                                     <TextField size='small' value={itemAddData.itemCalibrationSource} onChange={handleItemAddChange} fullWidth variant='outlined' select label="Calibration Source" name='itemCalibrationSource'>
                                         <MenuItem value=""><em>--Select--</em></MenuItem>
                                         <MenuItem value="inhouse">InHouse</MenuItem>
@@ -1032,6 +1095,19 @@ const ItemEdit = () => {
                                         <MenuItem value="oem">OEM</MenuItem>
                                     </TextField>
                                 </div>
+                                <div className='col-md-6'>
+                                    <RadioGroup
+                                        className="d-flex justify-content-center"
+                                        row
+                                        name='itemCalibrationDoneAt'
+                                        onChange={handleItemAddChange}
+                                        checked={itemAddData.itemCalibrationDoneAt}
+                                    >
+                                        <FormControlLabel value="Lab" checked={itemAddData.itemCalibrationDoneAt === "Lab"} control={<Radio />} label="Lab" />
+                                        <FormControlLabel value="Site" checked={itemAddData.itemCalibrationDoneAt === "Site"} control={<Radio />} label="Site" />
+                                    </RadioGroup>
+                                </div>
+
                             </div>
                             {itemAddData.itemCalibrationSource === "inhouse" &&
                                 <div className='row g-2'>
@@ -1042,7 +1118,6 @@ const ItemEdit = () => {
 
 
                                     <div className="col-md-12">
-
                                         <FormControl size='small' component="div" fullWidth>
                                             <InputLabel id="itemItemMasterIMTENoId">Select IMTENo.</InputLabel>
                                             <Select
@@ -1072,7 +1147,7 @@ const ItemEdit = () => {
                             {itemAddData.itemCalibrationSource === "outsource" &&
                                 <div className='row g-2'>
                                     <h6 className='text-center'>Enter Supplier Details</h6>
-                                    <div className="col-md-7">
+                                    <div className="col-md">
 
                                         <FormControl size='small' component="div" fullWidth>
                                             <InputLabel id="itemSupplierId">Select Supplier</InputLabel>
@@ -1102,25 +1177,18 @@ const ItemEdit = () => {
                                     </div>
 
 
-                                    <RadioGroup
-                                        className="col-md-5 d-flex justify-content-center"
-                                        row
-                                        name='itemCalibrationDoneAt'
-                                        onChange={handleItemAddChange}
-                                        checked={itemAddData.itemCalibrationDoneAt}
-                                    >
-                                        <FormControlLabel value="Lab" checked={itemAddData.itemCalibrationDoneAt === "Lab"} control={<Radio />} label="Lab" />
-                                        <FormControlLabel value="Site" checked={itemAddData.itemCalibrationDoneAt === "Site"} control={<Radio />} label="Site" />
-                                    </RadioGroup>
+
 
 
 
                                 </div>}
 
+
+
                             {itemAddData.itemCalibrationSource === "oem" &&
                                 <div className='row g-2'>
                                     <h6 className='text-center'>Enter oem Details</h6>
-                                    <div className="col-md-7">
+                                    <div className="col-md">
 
 
 
@@ -1152,16 +1220,7 @@ const ItemEdit = () => {
 
 
                                     </div>
-                                    <RadioGroup
-                                        className="col-md-5 d-flex justify-content-center"
-                                        row
-                                        name='itemCalibrationDoneAt'
-                                        onChange={handleItemAddChange}
 
-                                    >
-                                        <FormControlLabel value="Lab" checked={itemAddData.itemCalibrationDoneAt === "Lab"} control={<Radio />} label="Lab" />
-                                        <FormControlLabel value="Site" checked={itemAddData.itemCalibrationDoneAt === "Site"} control={<Radio />} label="Site" />
-                                    </RadioGroup>
 
 
 
@@ -1399,6 +1458,7 @@ const ItemEdit = () => {
                                                 multiple
                                                 id="demo-multiple-checkbox"
                                                 name="itemPartName"
+                                                disabled={!itemAddData.itemPlant}
                                                 value={itemAddData.itemPartName}
                                                 onChange={handleItemAddChange}
                                                 input={<OutlinedInput fullWidth label="Select Part" />}
@@ -1406,7 +1466,7 @@ const ItemEdit = () => {
                                                 MenuProps={MenuProps}
                                                 fullWidth
                                             >
-                                                {partData.map((name, index) => (
+                                                {plantWisePart.length > 0 && plantWisePart.map((name, index) => (
                                                     <MenuItem key={index} value={name.partNo}>
                                                         <Checkbox checked={itemAddData.itemPartName.indexOf(name.partNo) > -1} />
                                                         <ListItemText primary={name.partNo + " - " + name.partName + " - " + name.customer} />
@@ -1638,15 +1698,240 @@ const ItemEdit = () => {
                                 </tbody>
                             </table>
                         </Paper>}
-                        <div className="d-flex justify-content-end">
 
-                            <Button variant='contained' color='warning' onClick={() => { setOpen(true) }} className='me-3' type="button"  >
-                                <BorderColor />  Update
-                            </Button>
-                            <Button variant='contained' component={RouterLink} to={`/itemList/`} color='error' onClick={() => setItemAddData(initialItemAddData)} type="reset">
-                                <ArrowBackIcon /> Back To List
-                            </Button>
 
+                        <Dialog fullWidth={true} keepMounted maxWidth="xl" open={addOpenData} sx={{ color: "#f1f4f4" }}
+                            onClose={(e, reason) => {
+                                console.log(reason)
+                                if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+                                    setAddOpenData(false)
+                                }
+                            }}>
+                            <DialogTitle align='center' >Additional Information</DialogTitle>
+                            <IconButton
+                                aria-label="close"
+                                onClick={() => setAddOpenData(false)}
+                                sx={{
+                                    position: 'absolute',
+                                    right: 5,
+                                    top: 5,
+                                    color: (theme) => theme.palette.grey[500],
+                                }}
+                            >
+                                <Close />
+                            </IconButton>
+
+                            <DialogContent >
+                                <div className='row g-2 mb-2'>
+                                    <div className='col'>
+                                        <TextField label="Calibration Cost"
+                                            id="calibrationCostId"
+                                            defaultValue=""
+                                            value={itemAddData.calibrationCost}
+                                            onChange={handleItemAddChange}
+                                            size="small"
+                                            fullWidth
+                                            name="calibrationCost" />
+
+                                    </div>
+                                    <div className='col'>
+                                        <TextField label="Gauge life in days"
+                                            id="gaugeUsageId"
+                                            defaultValue=""
+                                            size="small"
+                                            fullWidth
+                                            value={itemAddData.gaugeUsage}
+                                            onChange={handleItemAddChange}
+                                            name="gaugeUsage" />
+
+                                    </div>
+                                    <div className='col'>
+
+                                        <TextField label="Gauge life alert in days"
+                                            id="lifealertDaysId"
+                                            defaultValue=""
+                                            size="small"
+                                            value={itemAddData.lifealertDays}
+                                            onChange={handleItemAddChange}
+                                            fullWidth
+                                            name="lifealertDays" />
+                                    </div>
+                                </div>
+                                <div className='row g-2 mb-2'>
+                                    <div className='col'>
+                                        <TextField label="Purchase Ref.No"
+                                            id="purchaseRefNoId"
+                                            defaultValue=""
+                                            value={itemAddData.purchaseRefNo}
+                                            onChange={handleItemAddChange}
+                                            size="small"
+                                            fullWidth
+                                            name="purchaseRefNo" />
+                                    </div>
+                                    <div className='col' style={{ width: "200%" }}>
+                                        <TextField label="Purchase Date"
+                                            id="purchaseDateId"
+                                            defaultValue=""
+                                            value={itemAddData.purchaseDate}
+                                            onChange={handleItemAddChange}
+                                            size="small"
+                                            fullWidth
+                                            name="purchaseDate" />
+                                        {/* <DatePicker
+                                                fullWidth
+                                                id="purchaseDateId"
+                                                name="purchaseDate"
+                                                value={dayjs(itemAddData.purchaseDate)}
+                                                onChange={(newValue) =>
+                                                    setItemAddData((prev) => ({ ...prev, purchaseDate: newValue.format("YYYY-MM-DD") }))
+                                                }
+                                                label="Purchase Date"
+                                                slotProps={{ textField: { size: 'small' } }}
+                                                className="h-100"
+                                            format="DD-MM-YYYY" />*/}
+                                    </div>
+                                    <div className='col'>
+                                        <TextField label="Purchase Cost"
+                                            id="purchaseCostId"
+                                            defaultValue=""
+                                            size="small"
+                                            fullWidth
+                                            value={itemAddData.purchaseCost}
+                                            onChange={handleItemAddChange}
+                                            name="purchaseCost" />
+                                    </div>
+
+                                </div>
+                                <div className='row g-2 mb-2'>
+                                    <div className='col'>
+                                        <TextField label="Special Remark"
+                                            id="specialRemarkId"
+                                            defaultValue=""
+                                            size="small"
+                                            value={itemAddData.specialRemark}
+                                            onChange={handleItemAddChange}
+                                            fullWidth
+                                            name="specialRemark" />
+                                    </div>
+                                    <div className='col'>
+                                        <TextField label="Drawing Issue No"
+                                            id="drawingIssueNoId"
+                                            defaultValue=""
+                                            size="small"
+                                            value={itemAddData.drawingIssueNo}
+                                            onChange={handleItemAddChange}
+                                            fullWidth
+                                            name="drawingIssueNo" />
+                                    </div>
+                                    <div className='col'>
+                                        <TextField label="Drawing No"
+                                            id="drawingNoId"
+                                            defaultValue=""
+                                            size="small"
+                                            onChange={handleItemAddChange}
+                                            value={itemAddData.drawingNo}
+                                            fullWidth
+                                            name="drawingNo" />
+                                    </div>
+                                </div>
+                                <div className='row g-2'>
+                                    <table className=' table-bordered '>
+                                        <tbody>
+                                            <tr>
+                                                <td>
+                                                    <Button helperText="Hello" className='me-2' size='small' component="label" fullWidth variant="contained" startIcon={<CloudUpload />} >
+                                                        R&R Upload
+                                                        <VisuallyHiddenInput type="file" onChange={handleAdditionalCertificate} />
+                                                    </Button>
+                                                </td>
+                                                <td>
+                                                    <div className='d-flex justify-content-center '>
+                                                        {(itemAddData.rdName !== "" && itemAddData.rdName !== undefined) &&
+                                                            <Chip
+                                                                className='col-12'
+                                                                icon={<Done />}
+                                                                color="success"
+                                                                label={itemAddData.rdName}
+                                                                onClick={() => {
+                                                                    const fileUrl = `${process.env.REACT_APP_PORT}/additionalCertificates/${itemAddData.rdName}`;
+                                                                    window.open(fileUrl, '_blank'); // Opens the file in a new tab/window
+                                                                }}
+                                                                onDelete={() => setItemAddData((prev) => ({ ...prev, rdName: "" }))}
+                                                            />}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <Button helperText="Hello" className='me-2' component="label" size='small' fullWidth variant="contained" startIcon={<CloudUpload />} >
+                                                        MSA Upload
+                                                        <VisuallyHiddenInput type="file" onChange={handleMSACertificate} />
+                                                    </Button>
+                                                </td>
+                                                <td>
+                                                    <div className='d-flex justify-content-center '>
+                                                        {(itemAddData.msaName !== "" && itemAddData.msaName !== undefined) &&
+                                                            <Chip
+                                                                className='col-12'
+                                                                icon={<Done />}
+                                                                color="success"
+                                                                label={itemAddData.msaName}
+                                                                onClick={() => {
+                                                                    const fileUrl = `${process.env.REACT_APP_PORT}/msaCertificates/${itemAddData.msaName}`;
+                                                                    window.open(fileUrl, '_blank'); // Opens the file in a new tab/window
+                                                                }}
+                                                                onDelete={() => setItemAddData((prev) => ({ ...prev, msaName: "" }))}
+                                                            />}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <Button helperText="Hello" component="label" size='small' fullWidth variant="contained" startIcon={<CloudUpload />} >
+                                                        Drawing Upload
+                                                        <VisuallyHiddenInput type="file" onChange={handleOtherFilesCertificate} />
+                                                    </Button>
+                                                </td>
+                                                <td>
+                                                    <div className='d-flex justify-content-center '>
+                                                        {(itemAddData.otherFile !== "" && itemAddData.otherFile !== undefined) &&
+                                                            <Chip
+                                                                className='col-12'
+                                                                icon={<Done />}
+                                                                color="success"
+                                                                label={itemAddData.otherFile}
+                                                                onClick={() => {
+                                                                    const fileUrl = `${process.env.REACT_APP_PORT}/otherFilesCertificates/${itemAddData.otherFile}`;
+                                                                    window.open(fileUrl, '_blank'); // Opens the file in a new tab/window
+                                                                }}
+                                                                onDelete={() => setItemAddData((prev) => ({ ...prev, otherFile: "" }))}
+                                                            />}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                        <div className="d-flex justify-content-center">
+                            <div className='col'>
+                                <Button
+                                    color="secondary"
+                                    className='me-2'
+                                    variant='contained'
+                                    onClick={() => setAddOpenData(true)}
+                                >
+                                    Additional Information
+                                </Button>
+                            </div>
+                            <div className="d-flex justify-content-end">
+
+
+                                <Button variant='contained' color='warning' onClick={() => { setOpen(true) }} className='me-3' type="button"  >
+                                    <BorderColor />  Update
+                                </Button>
+                                <Button variant='contained' component={RouterLink} to={`/itemList/`} color='error' onClick={() => setItemAddData(initialItemAddData)} type="reset">
+                                    <ArrowBackIcon /> Back To List
+                                </Button>
+
+                            </div>
                         </div>
 
 
@@ -1677,13 +1962,6 @@ const ItemEdit = () => {
                             </DialogActions>
                         </Dialog>
                     </div>
-
-
-
-
-
-
-
                 </LocalizationProvider >
             </form >
         </div >

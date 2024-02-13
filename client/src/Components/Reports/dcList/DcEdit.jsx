@@ -1,5 +1,5 @@
 import React, { createContext, useEffect, useState, useContext } from 'react'
-import { Container, Box, Alert, Button, Dialog, DialogActions, DialogContent, InputLabel, DialogContentText, FormControl, Select, DialogTitle, OutlinedInput, FormControlLabel, IconButton, MenuItem, Paper, Checkbox, ListItemText, Snackbar, Switch, TextField } from '@mui/material';
+import { Container, Box, Alert, Button, Dialog, DialogActions, DialogContent, InputLabel, DialogContentText, FormControl, Select, DialogTitle, OutlinedInput, FormControlLabel, IconButton, MenuItem, Paper, Checkbox, ListItemText, Snackbar, Switch, TextField, CircularProgress } from '@mui/material';
 import axios from 'axios';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import dayjs from 'dayjs';
@@ -21,7 +21,7 @@ const DcEdit = () => {
     const { employee, loggedEmp } = empRole
 
     const dcEditDatas = useContext(DcListContent)
-    const { dcEditOpen, setDcEditOpen, selectedRows, dcListFetchData, itemPlantList } = dcEditDatas
+    const { dcEditOpen, setDcEditOpen, selectedRows, dcListFetchData, itemPlantList, allowedPlants } = dcEditDatas
     console.log(selectedRows)
     const [errorhandler, setErrorHandler] = useState({});
 
@@ -39,8 +39,8 @@ const DcEdit = () => {
         dcReason: "",
         dcCommonRemarks: "",
         dcPartyItems: [],
-        dcPlant:"",
-         dcDepartment:""
+        dcPlant: "",
+        dcDepartment: ""
 
     }
 
@@ -55,17 +55,17 @@ const DcEdit = () => {
         dcReason: "",
         dcCommonRemarks: "",
         dcPartyItems: [],
-        dcPlant:"",
-        dcDepartment:""
+        dcPlant: "",
+        dcDepartment: ""
 
     })
     console.log(dcEditData)
 
     const [selectedPlantItems, setSelectedPlantItems] = useState([])
- 
+
     const settingDcData = () => {
-        if (selectedRows.length !== 0) { 
-            
+        if (selectedRows.length !== 0) {
+
             // Check if selectedRows is defined
             setDcEditData((prev) => ({
                 ...prev,
@@ -207,27 +207,11 @@ const DcEdit = () => {
 
     const [vendorDataList, setVendorDataList] = useState([])
 
-    {/*const vendorFetchData = async () => {
-        try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/vendor/getAllVendors`
-            );
-            setVendorDataList(response.data.result);
-            const filteredData = response.data.result.filter((dcItem) => !dcEditData.dcPartyItems.some(vendor => dcName._id === vendor._id === dcCode._id ===vendor._id === dcAddress._id === vendor.id))
-            setFilteredData(filteredData)
-        } catch (err) {
-            console.log(err);
-        }
-    };
-    useEffect(() => {
-        vendorFetchData();
-    }, []);*/}
-
     const vendorFetchData = async () => {
         try {
-            const response = await axios.get(
-                `${process.env.REACT_APP_PORT}/vendor/getAllVendors`
-            );
+            const response = await axios.post(
+                `${process.env.REACT_APP_PORT}/vendor/getVendorByPlants`, { allowedPlants: allowedPlants }
+              );
             setVendorDataList(response.data.result);
 
             // Assuming dcEditData is defined somewhere in your code
@@ -331,7 +315,11 @@ const DcEdit = () => {
         dcType: "info"
     })
 
+    const [loader, setLoader] = useState(false)
+
+
     const submitDcForm = async () => {
+        setLoader(true)
         try {
             if (dcEditData.dcPartyItems.length === 0) {
                 setAlertMessage({ dcMessage: "Cannot create DC without a Item", dcType: "error" })
@@ -347,10 +335,13 @@ const DcEdit = () => {
                 dcListFetchData()
 
                 setTimeout(() => setDcEditOpen(false), 1000)
-            }
+            } 
         } catch (err) {
-            console.log(err);
-            setAlertMessage({ dcMessage: err.message, dcType: "error" })
+            console.log(err.response.data.error);
+            setSnackBarOpen(true) 
+            setAlertMessage({ dcMessage: err.response.data.error, dcType: "error" })
+        }finally{
+            setLoader(false)
         }
     };
 
@@ -387,10 +378,10 @@ const DcEdit = () => {
         );
         setItemImtes(remainingItems)
     };
-   
+
     const handleDcItemAdd = (e) => {
         const { name, value } = e.target;
-       
+
 
         if (name === "itemListNames") {
             getItemByName(value)
@@ -403,7 +394,7 @@ const DcEdit = () => {
 
 
     }
-    
+
 
     const dcItemAdd = () => {
         if (selectedDcItem.length !== 0) {
@@ -523,12 +514,12 @@ const DcEdit = () => {
                                         id="dcPlantId"
                                         disabled
                                         select
-                                      value={dcEditData.dcPlant}
+                                        value={dcEditData.dcPlant}
                                         fullWidth
                                         onChange={handleDcItemAdd}
                                         size="small"
                                         name="dcPlant" >
-                                    
+
                                         <MenuItem value="all">All</MenuItem>
                                         {loggedEmp.plantDetails.map((item, index) => (
                                             <MenuItem key={index} value={item.plantName}>{item.plantName}</MenuItem>
@@ -576,7 +567,7 @@ const DcEdit = () => {
                                                     value={dcEditData.dcPartyId}
                                                     onChange={(e) => setPartyData(e.target.value)}
 
-                                                   
+
                                                     size="small"
                                                     fullWidth
                                                     disabled={dcEditData.dcPartyType === ""}
@@ -674,10 +665,12 @@ const DcEdit = () => {
                                                 size="small"
                                                 sx={{ width: "101%" }}
                                                 name="dcReason" >
-                                                <MenuItem value="All">All</MenuItem>
+                                                <MenuItem value="">Select</MenuItem>
+                                                <MenuItem value="Nil">Nil</MenuItem>
                                                 <MenuItem value="Service">Service</MenuItem>
-                                                <MenuItem value="Service & Calibration">Service & Calibration</MenuItem>
+                                                <MenuItem value="ServiceCalibration">Service & Calibration</MenuItem>
                                                 <MenuItem value="Calibration">Calibration</MenuItem>
+                                                <MenuItem value="others">Others</MenuItem>
 
                                             </TextField>
 
@@ -702,7 +695,7 @@ const DcEdit = () => {
 
 
 
-                            <Paper
+                            {/* <Paper
                                 sx={{
                                     p: 2,
                                     display: 'flex',
@@ -735,14 +728,14 @@ const DcEdit = () => {
                                     </div>
                                     <div className=' col d-flex justify-content-end'>
                                         <div className='me-2 '>
-                                            {/*<button type="button" className='btn btn-secondary' onClick={addDcValue} >Add Item</button>*/}
+                                            
                                             <Button startIcon={<Add />} onClick={() => dcItemAdd()} size='small' sx={{ minWidth: "130px" }} variant='contained'>Add Item</Button>
                                         </div>
 
                                     </div>
 
                                 </div>
-                            </Paper>
+                            </Paper> */}
 
                             <Paper
                                 sx={{
@@ -812,9 +805,10 @@ const DcEdit = () => {
                                                     <td>{item.itemMake}</td>
                                                     <td>{item.itemCalFreInMonths}</td>
                                                     <td> <select className="form-select form-select-sm" id="dcItemRemarksId" name="dcItemRemarks" value={item.dcItemRemarks} onChange={(e) => remarksChange(e, index)} aria-label="Floating label select example">
+                                                        <option value="">Select</option>
                                                         <option value="Calibration">Calibration</option>
                                                         <option value="Service">Service</option>
-                                                        <option value="Calibration & Service">Calibration & Service</option>
+                                                        <option value="Service and Calibration">Service and Calibration</option>
 
 
                                                     </select></td>
@@ -869,7 +863,7 @@ const DcEdit = () => {
                 </div>
                 <div>
                     <Button variant='contained' color='error' className='me-3' onClick={() => { setDcEditOpen(false); settingDcData() }}>Cancel</Button>
-                    <Button variant='contained' color='success' onClick={() => { setConfirmSubmit(true) }}>Submit</Button>
+                    <Button variant='contained' color='success' onClick={() => { setConfirmSubmit(true) }}>Submit {loader ? <CircularProgress sx={{color: "inherit"}} variant="indeterminate" size={20} /> : ""}</Button>
                 </div>
             </DialogActions>
 

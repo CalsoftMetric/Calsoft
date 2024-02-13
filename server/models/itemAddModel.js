@@ -16,6 +16,7 @@ const itemAddSchema = new mongoose.Schema({
     unique: [true, "IMTE No Should be Unique"],
     required: [true, "IMTE No Required"]
   },
+  itemSAPNo: String,
   itemImage: String,
   itemType: String,
   itemRangeSize: String,
@@ -26,6 +27,7 @@ const itemAddSchema = new mongoose.Schema({
   itemMake: String,
   itemModelNo: String,
   itemStatus: String,
+  itemStatusReason: String,
   itemLastStatus: String,
   itemReceiptDate: String,
   itemDepartment: String,
@@ -80,7 +82,7 @@ const itemAddSchema = new mongoose.Schema({
       acMaxPS: String,
       acWearLimitPS: {
         type: String,
-        default: () => "--"
+        
       },
       acMinOB: String,
       acMaxOB: String,
@@ -96,7 +98,6 @@ const itemAddSchema = new mongoose.Schema({
     default: () => dayjs().format("YYYY-MM-DD"),
     immutable: true,
   },
-
   updatedAt: {
     type: String,
     default: () => dayjs().format("YYYY-MM-DD")
@@ -106,7 +107,21 @@ const itemAddSchema = new mongoose.Schema({
   },
   itemLastModifiedBy: {
     type: String,
-  }
+  },
+  calibrationCost: String,
+  gaugeUsage: String,
+  lifealertDays: String,
+  purchaseRefNo: String,
+  purchaseDate: String,
+  purchaseCost: String,
+  specialRemark: String,
+  drawingIssueNo: String,
+  drawingNo: String,
+  rdName: String,
+  msaName: String,
+  otherFile: String,
+  
+
 });
 itemAddSchema.plugin(uniqueValidator);
 itemAddSchema.plugin(mongooseSequence, { inc_field: 'itemId', });

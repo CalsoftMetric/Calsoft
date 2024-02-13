@@ -3,6 +3,7 @@ const dayjs = require('dayjs')
 const excelToJson = require('convert-excel-to-json');
 const itemHistory = require("../models/itemHistory");
 const itemCalModel = require("../models/itemCalModel");
+const itemDcModel = require("../models/itemDcModel")
 
 const itemAddController = {
   getAllItemAdds: async (req, res) => {
@@ -17,6 +18,26 @@ const itemAddController = {
       res.status(500).send('Error on ItemAdd');
     }
   },
+
+  getItemByPlant: async (req, res) => {
+    const {allowedPlants} = req.body
+    try {
+      const itemAddResult = await itemAddModel.aggregate([
+        {
+          $match: {
+            "itemPlant": { $in: allowedPlants ? allowedPlants : [] } // Specify the values to match
+          }
+        }
+      ])
+     
+      res.status(202).json({ result: itemAddResult, status: 1 });
+      //res.status(200).json(employees);
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Error on ItemAddByPlant');
+    }
+  },
   createItemAdd: async (req, res) => {
     try {
       const {
@@ -26,6 +47,7 @@ const itemAddController = {
         itemPlant,
         itemAddMasterName,
         itemIMTENo,
+        itemSAPNo,
         itemImage,
         itemType,
         itemRangeSize,
@@ -36,6 +58,7 @@ const itemAddController = {
         itemMake,
         itemModelNo,
         itemStatus,
+        itemStatusReason,
         itemReceiptDate,
         itemDepartment,
         itemCurrentLocation,
@@ -74,9 +97,25 @@ const itemAddController = {
         acMinPSError,
         acMaxPSError,
         itemCreatedBy,
-        itemLastModifiedBy
+        itemLastModifiedBy,
+        calibrationCost,
+        gaugeUsage,
+        lifealertDays,
+        purchaseRefNo,
+        purchaseDate,
+        purchaseCost,
+        specialRemark,
+        drawingIssueNo,
+        drawingNo,
+        rdName,
+        msaName,
+        otherFile,
+
         // Assuming createdAt is part of the request body
       } = req.body;
+
+
+
 
       const newItemFields = {
         itemMasterRef,
@@ -85,6 +124,7 @@ const itemAddController = {
         isItemMaster,
         itemAddMasterName,
         itemIMTENo,
+        itemSAPNo,
         itemImage,
         itemType,
         itemRangeSize,
@@ -95,6 +135,7 @@ const itemAddController = {
         itemMake,
         itemModelNo,
         itemStatus,
+        itemStatusReason,
         itemReceiptDate,
         itemDepartment,
         itemCurrentLocation,
@@ -135,10 +176,24 @@ const itemAddController = {
         acMaxPSError,
         itemCreatedBy,
         itemLastModifiedBy,
+        calibrationCost,
+        gaugeUsage,
+        lifealertDays,
+        purchaseRefNo,
+        purchaseDate,
+        purchaseCost,
+        specialRemark,
+        drawingIssueNo,
+        drawingNo,
+        rdName,
+        msaName,
+        otherFile,
 
       };
 
       const newItem = new itemAddModel(newItemFields);
+      console.log("SAPNo", itemSAPNo)
+      console.log(newItemFields)
 
       const validationError = newItem.validateSync();
       if (validationError) {
@@ -156,8 +211,7 @@ const itemAddController = {
       }
 
       const createdItem = await itemAddModel.create(newItemFields);
-      console.log(createdItem)
-      console.log("ItemAdd Created Successfully");
+
 
       let obSize = [];
       if (createdItem.itemType === "variable") {
@@ -184,7 +238,9 @@ const itemAddController = {
         itemPlant,
         isItemMaster,
         itemAddMasterName,
+
         itemIMTENo,
+        itemSAPNo,
         itemType,
         itemRangeSize,
         itemRangeSizeUnit,
@@ -215,6 +271,9 @@ const itemAddController = {
         acceptanceCriteria: obSize,
         itemCreatedBy,
         itemLastModifiedBy,
+        rdName,
+        msaName,
+        otherFile,
 
       });
       await historyRecord.save();
@@ -251,6 +310,7 @@ const itemAddController = {
         isItemMaster,
         itemAddMasterName,
         itemIMTENo,
+        itemSAPNo,
         itemImage,
         itemType,
         itemRangeSize,
@@ -264,7 +324,7 @@ const itemAddController = {
         itemReceiptDate,
         itemDepartment,
         itemPlant,
-        
+
         itemLastLocation,
         itemArea,
         itemPlaceOfUsage,
@@ -300,7 +360,20 @@ const itemAddController = {
         acMinPSError,
         acMaxPSError,
         itemCreatedBy,
-        itemLastModifiedBy
+        itemLastModifiedBy,
+
+        calibrationCost,
+        gaugeUsage,
+        lifealertDays,
+        purchaseRefNo,
+        purchaseDate,
+        purchaseCost,
+        specialRemark,
+        drawingIssueNo,
+        drawingNo,
+        rdName,
+        msaName,
+        otherFile,
       } = req.body;
       // Create an object with the fields you want to update
       const updateItemFields = {
@@ -309,6 +382,7 @@ const itemAddController = {
         isItemMaster,
         itemAddMasterName,
         itemIMTENo,
+        itemSAPNo,
         itemImage,
         itemType,
         itemRangeSize,
@@ -322,7 +396,7 @@ const itemAddController = {
         itemReceiptDate,
         itemDepartment,
         itemPlant,
-        
+
         itemLastLocation,
         itemArea,
         itemPlaceOfUsage,
@@ -358,7 +432,20 @@ const itemAddController = {
         acMinPSError,
         acMaxPSError,
         itemCreatedBy,
-        itemLastModifiedBy
+        itemLastModifiedBy,
+
+        calibrationCost,
+        gaugeUsage,
+        lifealertDays,
+        purchaseRefNo,
+        purchaseDate,
+        purchaseCost,
+        specialRemark,
+        drawingIssueNo,
+        drawingNo,
+        rdName,
+        msaName,
+        otherFile,
       };
 
       // Find the designation by desId and update it
@@ -385,11 +472,82 @@ const itemAddController = {
       const updateItemAdd = await itemAddModel.findOneAndUpdate(
         { _id: itemAddId },
         updateItemFields,
-        { new: true } // To return the updated document
+        { new: true }// To return the updated document
       );
 
       if (!updateItemAdd) {
         return res.status(404).json({ error: 'ItemAdd not found' });
+      } else {
+        let obSize = [];
+        if (updateItemAdd.itemType === "variable") {
+          obSize = acceptanceCriteria.map(item => {
+            return item.acParameter + ":" + (item.acOBError ? item.acOBError : "")
+          })
+        } else {
+          obSize = acceptanceCriteria.map(item => {
+
+            if (itemOBType === "minmax") {
+              return item.acParameter + ":" + (item.acMinOB ? item.acMinOB : "") + "/" + (item.acMaxOB ? item.acMaxOB : "")
+            } else {
+              return item.acParameter + ":" + (item.acAverageOB ? item.acAverageOB : "")
+            }
+
+          })
+        }
+        console.log(obSize)
+
+        console.log("history working")
+
+        const historyRecord = {
+          itemId: updateItemAdd._id,
+          selectedItemMaster,
+          itemPlant,
+          isItemMaster,
+          itemAddMasterName,
+          itemIMTENo,
+          itemSAPNo,
+          itemType,
+          itemRangeSize,
+          itemRangeSizeUnit,
+          itemLC,
+          itemLCUnit,
+          itemModelNo,
+          itemStatus,
+          itemReceiptDate,
+          itemDepartment,
+          itemCurrentLocation: updateItemAdd.itemCurrentLocation,
+          itemLastLocation,
+          itemLocation: "department",
+          itemCalFreInMonths,
+          itemCalAlertDays,
+          itemCalibrationSource,
+          itemCalibrationDoneAt,
+          itemItemMasterName,
+          itemItemMasterIMTENo,
+          itemCalDate,
+          itemDueDate,
+          itemCalibratedAt,
+          itemCertificateName,
+          itemCertificateNo,
+          itemOBType,
+          itemUncertainity,
+          itemUncertainityUnit,
+          itemPrevCalData,
+          acceptanceCriteria: obSize,
+          itemCreatedBy,
+          itemLastModifiedBy,
+          rdName,
+          msaName,
+          otherFile,
+
+        };
+        
+        const updateItemHistory = await itemHistory.findOneAndUpdate(
+          { itemId: updateItemAdd._id },
+          {$set: historyRecord},
+
+        );
+        console.log(updateItemHistory)
       }
       console.log("ItemAdd Updated Successfully")
       res.status(200).json({ result: updateItemAdd, message: "ItemAdd Updated Successfully" });
@@ -410,34 +568,73 @@ const itemAddController = {
   },
   deleteItemAdd: async (req, res) => {
     try {
+      const { itemAddIds } = req.body; // Assuming an array of itemAdd IDs is sent in the request body
 
-      const { itemAddIds } = req.body; // Assuming an array of vendor IDs is sent in the request body
-      console.log(req.body)
       const deleteResults = [];
+      const errors = [];
 
       for (const itemAddId of itemAddIds) {
-        // Find and remove each vendor by _id
+        // Check if the itemAddId is used in itemCalModel
+        const calData = await itemCalModel.findOne({ calItemId: itemAddId });
+        const itemData = await itemAddModel.findOne({ _id: itemAddId });
 
-        const calData = await itemCalModel.find({ calItemId: itemAddId })
-        const deletedItemAdd = await itemAddModel.findOneAndRemove({ _id: itemAddId });
-        console.log(deletedItemAdd)
-        if (!deletedItemAdd) {
-          // If a vendor was not found, you can skip it or handle the error as needed.
-          console.log(`ItemAdd with ID ${itemAddId} not found.`);
-          res.status(500).json({ message: `ItemAdd with ID not found.` });
-
+        if (calData || (itemData && itemData.dcStatus === "1")) {
+          // If the itemAddId is used in itemCalModel or if its dcStatus is "1", push an error message
+          errors.push(`Items are is already used cannot be deleted.`);
         } else {
-          console.log(`ItemAdd with ID ${itemAddId} deleted successfully.`);
-          deleteResults.push(deletedItemAdd);
+          // If the itemAddId is not used in itemCalModel and its dcStatus is not "1", proceed with deletion
+          const deletedItemAdd = await itemAddModel.findOneAndRemove({ _id: itemAddId });
+          const deleteHistoryCard = await itemHistory.deleteMany({ itemIMTENo: itemData.itemIMTENo });
+          if (!deletedItemAdd) {
+            errors.push(`Selected ItemAdd with ID ${itemAddId} not found.`);
+          } else {
+            deleteResults.push(deletedItemAdd);
+          }
         }
       }
 
-      return res.status(202).json({ message: 'ItemAdd deleted successfully', results: `${deleteResults.length} ItemAdd Deleted Successfull ` });
+      if (errors.length > 0) {
+        // If there are errors, send 400 Bad Request status with error messages
+        if (errors.length === 1) {
+          return res.status(400).json({ errors: "Selected Item already used cannot be deleted" });
+        } else {
+          return res.status(400).json({ errors: "Selected Items are already used cannot be deleted" });
+        }
+
+      }
+
+      return res.status(202).json({ message: 'ItemAdd deleted successfully', results: `${deleteResults.length} ItemAdd Deleted Successfully` });
     } catch (error) {
       console.error(error);
       res.status(500).send('Internal Server Error');
     }
   },
+
+  updateItemStatus: async (req, res) => {
+    try {
+      const {itemIds, itemStatus, itemStatusReason} = req.body; // Assuming desId is part of the URL parameter
+      // if (isNaN(desId)) {
+      // Find the designation by desId and update it
+      console.log(req.body)
+      const changeStatus = [];
+      if(itemIds.length > 0){
+        for(const itemId of itemIds){
+          const updateItemAdd = await itemAddModel.findOneAndUpdate(
+            { _id : itemId },
+            {$set : {itemStatus, itemStatusReason}},
+            { new: true }
+          );
+          changeStatus.push(updateItemAdd)
+        }
+      }
+      res.status(200).json({ message: `Status changed for ${changeStatus.length} items`, status: "1" });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ error: error, status: 0 });
+    }
+  },
+
+
   getItemAddById: async (req, res) => {
     try {
       const itemAddId = req.params.id; // Assuming desId is part of the URL parameter
@@ -662,7 +859,7 @@ const itemAddController = {
           A: 'itemMasterRef',
           B: 'itemAddMasterName',
           C: 'itemIMTENo',
-          D: 'itemImage',
+          D: 'itemSAPNo',
           E: 'itemType',
           F: 'itemRangeSize',
           G: 'itemRangeSizeUnit',
@@ -694,7 +891,7 @@ const itemAddController = {
           AG: 'itemPlant',
           AH: 'itemPrevCalData',
           AI: 'itemItemMasterIMTENo',
-        
+
 
         }
       });
@@ -724,7 +921,7 @@ const itemAddController = {
           const data = {
             itemCalDate: savedItemAdd.itemCalDate ? dayjs(savedItemAdd.itemCalDate).format("YYYY-MM-DD") : "",
             itemDueDate: savedItemAdd.itemDueDate ? dayjs(savedItemAdd.itemDueDate).format("YYYY-MM-DD") : "",
-            itemIMTENo: savedItemAdd.itemIMTENo ? savedItemAdd.itemIMTENo: "",
+            itemIMTENo: savedItemAdd.itemIMTENo ? savedItemAdd.itemIMTENo : "",
             itemCalibratedAt: savedItemAdd.itemCalibratedAt ? savedItemAdd.itemCalibratedAt : "",
             itemCertificateNo: savedItemAdd.itemCertificateNo ? savedItemAdd.itemCertificateNo : "",
             itemId: savedItemAdd._id
