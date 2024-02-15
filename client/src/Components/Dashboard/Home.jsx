@@ -1242,17 +1242,7 @@ const Home = () => {
     }
   };
   const [mailIds, setMailIds] = useState([])
-  const mailIdGather = () => {
-    if (selectedRows.length > 0) {
-      const plants = selectedRows.map(item => item.itemPlant)
-      console.log(plants)
-
-      const empEmails = activeEmps.allEmps.filter(emp => emp.plantDetails.find(plant => plants.find(itemPlant => plant.plantName == itemPlant)))
-      const uniqueEmails = [...new Set(empEmails)]
-      setMailIds(empEmails)
-      console.log(uniqueEmails)
-    }
-  }
+  
   const [mailList, setMailList] = useState([])
   const getMailList = async () => {
     try {
@@ -1262,7 +1252,7 @@ const Home = () => {
       console.log(response.data.result)
       setMailList(response.data.result)
 
-
+ 
     } catch (err) {
       console.log(err);
     }

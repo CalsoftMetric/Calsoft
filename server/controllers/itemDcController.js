@@ -20,6 +20,25 @@ const itemDcController = {
       res.status(500).send('Error on Item Dc');
     }
   },
+  getItemDCByPlant: async (req, res) => {
+    const {allowedPlants} = req.body
+    try {
+      const itemDCResult = await itemDcModel.aggregate([
+        {
+          $match: {
+            "dcPlant": { $in: allowedPlants ? allowedPlants : [] } // Specify the values to match
+          }
+        }
+      ])
+     
+      res.status(202).json({ result: itemDCResult, status: 1 });
+      //res.status(200).json(employees);
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Error on ItemDCByPlant');
+    }
+  },
   createItemDc: async (req, res) => {
 
     try {

@@ -22,6 +22,25 @@ const itemGRNController = {
       res.status(500).send('Error on Item GRN');
     }
   },
+  getItemGRNByPlant: async (req, res) => {
+    const {allowedPlants} = req.body
+    try {
+      const itemGRNResult = await itemGRNModel.aggregate([
+        {
+          $match: {
+            "grnPlant": { $in: allowedPlants ? allowedPlants : [] } // Specify the values to match
+          }
+        }
+      ])
+     
+      res.status(202).json({ result: itemGRNResult, status: 1 });
+      //res.status(200).json(employees);
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Error on ItemGRNByPlant');
+    }
+  },
   createItemGRN: async (req, res) => {
 
 

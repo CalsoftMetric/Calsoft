@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 
 function connectDatabase() {
-  mongoose.connect('mongodb://localhost/metric', {
+  mongoose.connect('mongodb://localhost/Calsoft', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });

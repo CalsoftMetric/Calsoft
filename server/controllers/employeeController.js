@@ -239,34 +239,27 @@ const employeeController = {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   },
-  updateEmployeePlantDetails: async (req, res) => {
-    try {
-      // Assuming desId is part of the URL parameter
+  getMailIdsByPlant : async (req, res) => {
+    try{
+      const {selectedPlant} = req.body
 
-      
-      // if (isNaN(desId)) {
-      //   return res.status(400).json({ error: 'Invalid desId value' });
-      // }
-     
-      
-     
-      console.log("ItemAdd Updated Successfully")
-      res.status(200).json({ result: updatedItems, message: "ItemAdd Updated Successfully" });
-    } catch (error) {
-      console.log(error);
-      if (error.code === 11000) {
-        console.log(error)
-        return res.status(500).json({ error: 'Duplicate Value Not Accepted' });
+      const emails = await employeeModel.aggregate([
+        {
+          $match: {
+            "plantDetails.plantName": { $in: selectedPlant ? selectedPlant : [] }
+          }
+        },
+        {
+          $project: { mailId: 1, firstName: 1, _id: 0 }  // Only return the mailId field
+        }
+      ])
+      res.status(202).json({result: emails, status: 1, message: "Mail Id get Successfully"})
+    }catch{
 
-      }
-      const errors500 = {};
-      for (const key in error.errors) {
-        errors500[key] = error.errors[key].message;
-      }
-      console.log(error)
-      res.status(500).json({ error: error, status: 0 });
     }
-  },
+  }
+
+
 
   
 
